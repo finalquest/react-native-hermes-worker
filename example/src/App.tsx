@@ -14,8 +14,10 @@ for (let i = 0; i < 100000000; i++) {
 `;
 
 const loopForeverSync = () => {
-  for (let i = 0; i < 100000000; i++) {}
-  return '12';
+  return new Promise((resolve) => {
+    for (let i = 0; i < 100000000; i++) {}
+    resolve('12');
+  });
 };
 
 export default function App() {
@@ -55,7 +57,9 @@ export default function App() {
         title="Enqueue Item sync"
         onPress={() => {
           setResult('processing...');
-          setResult(loopForeverSync());
+          loopForeverSync().then((res: any) => {
+            setResult(res);
+          });
         }}
       />
     </View>
