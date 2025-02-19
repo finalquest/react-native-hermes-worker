@@ -1,5 +1,25 @@
 import HermesWorker from './NativeHermesWorker';
 
-export function multiply(a: number, b: number): number {
-  return HermesWorker.multiply(a, b);
+export function startProcessingThread(): void {
+  HermesWorker.startProcessingThread();
+}
+
+export function stopProcessingThread(): void {
+  HermesWorker.stopProcessingThread();
+}
+
+export function enqueueItem(item: string): Promise<string> {
+  return new Promise((resolve, reject) => {
+    try {
+      HermesWorker.enqueueItem(item).then((result: string) => {
+        if (result.startsWith('Error:')) {
+          reject(new Error(result));
+        } else {
+          resolve(result);
+        }
+      });
+    } catch (error) {
+      reject(error);
+    }
+  });
 }

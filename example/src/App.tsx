@@ -1,12 +1,63 @@
-import { Text, View, StyleSheet } from 'react-native';
-import { multiply } from 'react-native-hermes-worker';
+import { useEffect, useState } from 'react';
+import { View, StyleSheet, Button, Text } from 'react-native';
+import {
+  startProcessingThread,
+  stopProcessingThread,
+  enqueueItem,
+} from 'react-native-hermes-worker';
 
-const result = multiply(3, 7);
+// loop for a great amount of time
+const loopForever = `
+for (let i = 0; i < 100000000; i++) {
+}
+12;
+`;
+
+const loopForeverSync = () => {
+  for (let i = 0; i < 100000000; i++) {}
+  return '12';
+};
 
 export default function App() {
+  const [counter, setCounter] = useState(0);
+  const [result, setResult] = useState('');
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCounter((prev) => prev + 1);
+    }, 10);
+
+    return () => clearInterval(interval);
+  }, []);
+
   return (
     <View style={styles.container}>
-      <Text>Result: {result}</Text>
+      <Text>{counter}</Text>
+      <Text>{`function result: ${result}`}</Text>
+      <Button
+        title="Start Processing Thread"
+        onPress={() => startProcessingThread()}
+      />
+      <Button
+        title="Stop Processing Thread"
+        onPress={() => stopProcessingThread()}
+      />
+      <Button
+        title="Enqueue Item worker"
+        onPress={() => {
+          setResult('processing...');
+          return enqueueItem(loopForever).then((res: string) => {
+            setResult(res);
+          });
+        }}
+      />
+      <Button
+        title="Enqueue Item sync"
+        onPress={() => {
+          setResult('processing...');
+          setResult(loopForeverSync());
+        }}
+      />
     </View>
   );
 }
