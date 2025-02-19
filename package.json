@@ -50,6 +50,9 @@
     "ios",
     "android"
   ],
+  "bin": {
+    "compile-hermes-bundles": "./scripts/build-worker.js"
+  },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/finalquest/react-native-hermes-worker/react-native-hermes-worker.git"
@@ -147,7 +150,9 @@
   },
   "eslintIgnore": [
     "node_modules/",
-    "lib/"
+    "lib/",
+    "ios/",
+    "android/"
   ],
   "prettier": {
     "quoteProps": "consistent",

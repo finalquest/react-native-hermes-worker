@@ -102,10 +102,19 @@ namespace hermesworker
         std::cout << "C++: Thread worker function ended" << std::endl;
     }
 
-    void startProcessingThread() {
+    void startProcessingThread(const uint8_t *bytecode, size_t size) {
         std::cout << "C++: Starting processing thread" << std::endl;
 
         worker_runtime = facebook::hermes::makeHermesRuntime();
+
+        if(bytecode && size > 0) {
+            std::cout << "C++: Evaluating Hermes bytecode" << std::endl;
+            worker_runtime->evaluateJavaScript(
+                std::make_unique<facebook::jsi::StringBuffer>(
+                    // We need to pass the bytecode as a buffer
+                    std::string(reinterpret_cast<const char *>(bytecode), size)),
+                "worker");
+        }
 
         should_stop = false;
         worker_thread = std::thread(processQueueItems);

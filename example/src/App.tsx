@@ -7,10 +7,18 @@ import {
 } from 'react-native-hermes-worker';
 
 // loop for a great amount of time
-const loopForever = `
-for (let i = 0; i < 100000000; i++) {
-}
-12;
+const funcToRun = `
+ function funcToRun() {
+  return 12;
+ }
+`;
+
+const funcToExec = `
+  funcToRun();
+`;
+
+const funcToBundle = `
+  pepito(12222222);
 `;
 
 const loopForeverSync = () => {
@@ -38,17 +46,35 @@ export default function App() {
       <Text>{`function result: ${result}`}</Text>
       <Button
         title="Start Processing Thread"
-        onPress={() => startProcessingThread()}
+        onPress={() => startProcessingThread('index')}
       />
       <Button
         title="Stop Processing Thread"
         onPress={() => stopProcessingThread()}
       />
       <Button
-        title="Enqueue Item worker"
+        title="Enqueue Item function"
         onPress={() => {
           setResult('processing...');
-          return enqueueItem(loopForever).then((res: string) => {
+          return enqueueItem(funcToRun).then((res: string) => {
+            setResult(res);
+          });
+        }}
+      />
+      <Button
+        title="Enqueue Item execute"
+        onPress={() => {
+          setResult('processing...');
+          return enqueueItem(funcToExec).then((res: string) => {
+            setResult(res);
+          });
+        }}
+      />
+      <Button
+        title="Enqueue Item bundle"
+        onPress={() => {
+          setResult('processing...');
+          return enqueueItem(funcToBundle).then((res: string) => {
             setResult(res);
           });
         }}

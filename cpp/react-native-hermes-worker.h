@@ -15,7 +15,7 @@ namespace hermesworker
   using ResultCallback = std::function<void(bool success, const std::string&)>;
 
   bool isProcessingThreadRunning();
-  void startProcessingThread();
+  void startProcessingThread(const uint8_t *bytecode, size_t size);
   void stopProcessingThread();
   void enqueueItem(const std::string &item, ResultCallback callback);
 }

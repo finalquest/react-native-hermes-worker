@@ -10580,6 +10580,8 @@ __metadata:
   peerDependencies:
     react: "*"
     react-native: "*"
+  bin:
+    compile-hermes-bundles: ./scripts/build-worker.js
   languageName: unknown
   linkType: soft
 

@@ -1,7 +1,7 @@
 import HermesWorker from './NativeHermesWorker';
 
-export function startProcessingThread(): void {
-  HermesWorker.startProcessingThread();
+export function startProcessingThread(hbcFileName: string | null): void {
+  HermesWorker.startProcessingThread(hbcFileName);
 }
 
 export function stopProcessingThread(): void {

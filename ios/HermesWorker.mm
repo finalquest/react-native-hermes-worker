@@ -3,13 +3,35 @@
 @implementation HermesWorker
 RCT_EXPORT_MODULE()
 
-// New methods
-RCT_EXPORT_METHOD(startProcessingThread) {
-  if (hermesworker::isProcessingThreadRunning()) {
-    NSLog(@"Processing thread already running");
-    return;
-  }
-  hermesworker::startProcessingThread();
+RCT_EXPORT_METHOD(startProcessingThread:(NSString *)hbcFileName) {
+    
+    if (hermesworker::isProcessingThreadRunning()) {
+        NSLog(@"Processing thread already running");
+        return;
+    }
+    if(hbcFileName == nil) {
+        hermesworker::startProcessingThread(nullptr, 0);
+        return;
+    }
+    // Load bytecode bundle
+    NSString *bundlePath = [[NSBundle mainBundle] pathForResource:hbcFileName ofType:@".worker.bundle.hbc"];
+    if (!bundlePath) {
+        NSLog(@"Error: Could not find worker.bundle.hbc");
+        return;
+    }
+    
+    NSData *bundleData = [NSData dataWithContentsOfFile:bundlePath];
+    if (!bundleData) {
+        NSLog(@"Error: Could not load worker.bundle.hbc");
+        return;
+    }
+    
+    // Pass the raw bytecode to C++
+  hermesworker::startProcessingThread(
+        static_cast<const uint8_t*>(bundleData.bytes),
+        bundleData.length
+                                      );
+
 }
 
 RCT_EXPORT_METHOD(stopProcessingThread) {
@@ -22,7 +44,7 @@ RCT_EXPORT_METHOD(enqueueItem:(NSString *)item
     dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
         //if not running, lets start it
         if (!hermesworker::isProcessingThreadRunning()) {
-            hermesworker::startProcessingThread();
+            hermesworker::startProcessingThread(nullptr, 0);
         }
         try {
             std::string cppString = [item UTF8String];
