@@ -7,6 +7,9 @@ const root = path.resolve(__dirname, '..');
 module.exports = getConfig(
   {
     presets: ['module:@react-native/babel-preset'],
+    plugins: [
+      path.resolve(__dirname, '../src/plugins/index.js'), // Use the local Babel plugin
+    ],
   },
   { root, pkg }
 );

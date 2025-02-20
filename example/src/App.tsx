@@ -7,19 +7,16 @@ import {
 } from 'react-native-hermes-worker';
 
 // loop for a great amount of time
-const funcToRun = `
- function funcToRun() {
-  return 12;
- }
-`;
+function funcToRun() {
+  return 12234;
+}
+// const funcToExec = `
+//   funcToRun();
+// `;
 
-const funcToExec = `
-  funcToRun();
-`;
-
-const funcToBundle = `
-  pepito(12222222);
-`;
+// const funcToBundle = `
+//   pepito(12222222);
+// `;
 
 const loopForeverSync = () => {
   return new Promise((resolve) => {
@@ -56,12 +53,13 @@ export default function App() {
         title="Enqueue Item function"
         onPress={() => {
           setResult('processing...');
+
           return enqueueItem(funcToRun).then((res: string) => {
             setResult(res);
           });
         }}
       />
-      <Button
+      {/* <Button
         title="Enqueue Item execute"
         onPress={() => {
           setResult('processing...');
@@ -78,7 +76,7 @@ export default function App() {
             setResult(res);
           });
         }}
-      />
+      /> */}
       <Button
         title="Enqueue Item sync"
         onPress={() => {
