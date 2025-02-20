@@ -49,10 +49,14 @@ RCT_EXPORT_METHOD(enqueueItem:(NSString *)item
         try {
             std::string cppString = [item UTF8String];
             hermesworker::enqueueItem(cppString, 
-                [resolve, reject](bool success, const std::string& result) {
+                [resolve, reject](bool success, const std::string result) {
                     dispatch_async(dispatch_get_main_queue(), ^{
                         if (success) {
                             NSString *nsResult = [NSString stringWithUTF8String:result.c_str()];
+                            if (!nsResult) {
+                                reject(@"ENCODING_ERROR", @"Failed to decode result string", nil);
+                                return;
+                            }
                             resolve(nsResult);
                         } else {
                             NSString *errorMessage = [NSString stringWithUTF8String:result.c_str()];

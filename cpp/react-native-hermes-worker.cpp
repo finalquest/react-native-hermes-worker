@@ -61,17 +61,14 @@ namespace hermesworker
                         processed = result.getString(*worker_runtime).utf8(*worker_runtime);
                     } else if (result.isObject()) {
                         std::cout << "C++: Result is an object" << std::endl;
-                        // Handle object result by converting to string
-                        auto resultObj = result.asObject(*worker_runtime);
-                        if (resultObj.hasProperty(*worker_runtime, "toString")) {
-                            std::cout << "C++: Converting object to string using toString()" << std::endl;
-                            auto toStringFn = resultObj.getPropertyAsFunction(*worker_runtime, "toString");
-                            auto stringResult = toStringFn.call(*worker_runtime);
-                            processed = stringResult.getString(*worker_runtime).utf8(*worker_runtime);
-                        } else {
-                            std::cout << "C++: Object has no toString method" << std::endl;
-                            processed = "[Object]";
-                        }
+                        // Get global object to access JSON.stringify
+                        auto global = worker_runtime->global();
+                        auto jsonObj = global.getPropertyAsObject(*worker_runtime, "JSON");
+                        auto stringifyFn = jsonObj.getPropertyAsFunction(*worker_runtime, "stringify");
+                        
+                        // Call JSON.stringify with the result object
+                        auto stringResult = stringifyFn.call(*worker_runtime, result);
+                        processed = stringResult.getString(*worker_runtime).utf8(*worker_runtime);
                     } else {
                         std::cout << "C++: Result is another type, converting to string" << std::endl;
                         processed = result.toString(*worker_runtime).utf8(*worker_runtime);

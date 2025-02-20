@@ -54,8 +54,9 @@ export default function App() {
         onPress={() => {
           setResult('processing...');
 
-          return enqueueItem(funcToRun).then((res: string) => {
-            setResult(res);
+          return enqueueItem(funcToRun).then((res: unknown) => {
+            console.log('res', res);
+            setResult(res as string);
           });
         }}
       />
