@@ -1,5 +1,6 @@
 module.exports = function (babel) {
   const { types: t } = babel;
+
   return {
     visitor: {
       CallExpression(path) {
@@ -9,82 +10,69 @@ module.exports = function (babel) {
         ) {
           const arg = path.node.arguments[0];
 
-          // Check if the argument is a function identifier (variable holding a function)
+          // Handle function references (e.g., enqueueItem(funcToRun);)
           if (t.isIdentifier(arg)) {
             const binding = path.scope.getBinding(arg.name);
 
-            // If the binding exists, check if it's a function declaration or function expression
             if (binding) {
               const bindingNode = binding.path.node;
 
+              // Case 1: Function Declaration
               if (t.isFunctionDeclaration(bindingNode)) {
                 let functionCode = path.hub.file.code.slice(
                   bindingNode.start,
                   bindingNode.end
                 );
 
-                // Remove newlines and extra spaces
-                const cleanFunctionCode = functionCode
-                  .replace(/\n/g, ' ') // Remove newlines
-                  .replace(/\s+/g, ' '); // Collapse spaces
+                // Clean up whitespace & ensure single-line format
+                const cleanFunctionCode = functionCode.replace(/\s+/g, ' ');
+                const functionString = `${cleanFunctionCode} ${arg.name}();`;
 
-                // Use JSON.stringify() to handle escaping properly
-                const functionString = JSON.stringify(
-                  `${cleanFunctionCode} ${arg.name}();`
-                );
-
-                path.node.arguments[0] = t.stringLiteral(
-                  functionString.slice(1, -1)
-                );
+                path.node.arguments[0] = t.stringLiteral(functionString);
               }
 
-              // If it's a variable declaration with a function expression or arrow function
+              // Case 2: Arrow Function Assigned to a Variable
               else if (
                 t.isVariableDeclarator(bindingNode) &&
-                (t.isFunctionExpression(bindingNode.init) ||
-                  t.isArrowFunctionExpression(bindingNode.init))
+                t.isArrowFunctionExpression(bindingNode.init)
               ) {
                 let functionCode = path.hub.file.code.slice(
                   bindingNode.init.start,
                   bindingNode.init.end
                 );
 
-                // Convert arrow function to function declaration format
-                const functionName = arg.name; // Variable name
-                const functionDeclaration = `function ${functionName} ${functionCode} ${functionName}();`;
+                const functionName = arg.name;
 
-                // Use JSON.stringify() for safe formatting
-                const functionString = JSON.stringify(functionDeclaration);
+                // Clean up the function formatting first
+                const cleanFunctionCode = functionCode.replace(/\s+/g, ' ');
+                // Create the complete function string with proper syntax, ensuring () is included
+                const functionString = `function ${functionName}() ${cleanFunctionCode.replace(/^\(\s*\)?\s*=>\s*/, '')} ${functionName}();`;
 
-                path.node.arguments[0] = t.stringLiteral(
-                  functionString.slice(1, -1)
-                );
+                path.node.arguments[0] = t.stringLiteral(functionString);
               }
             }
           }
 
-          // If argument is an inline function (arrow or function expression)
+          // Case 3: Directly Passed Arrow Functions (Inline Functions)
           else if (
-            t.isFunctionExpression(arg) ||
-            t.isArrowFunctionExpression(arg)
+            t.isArrowFunctionExpression(arg) ||
+            t.isFunctionExpression(arg)
           ) {
-            const funcName = arg.id ? arg.id.name : 'anonymousFunction';
             let functionCode = path.hub.file.code.slice(arg.start, arg.end);
 
-            // Remove newlines and extra spaces
-            const cleanFunctionCode = functionCode
-              .replace(/\n/g, ' ') // Remove newlines
-              .replace(/\s+/g, ' '); // Collapse spaces
+            const funcName = 'anonymousFunction';
 
-            // Convert function expression into function declaration
+            // ✅ Replace inline `() => {}` with `function anonymousFunction() {}`
+            functionCode = functionCode.replace(
+              /^\(\)?\s*=>\s*/,
+              `function ${funcName} `
+            );
+
+            // Clean up formatting
+            const cleanFunctionCode = functionCode.replace(/\s+/g, ' ');
             const wrappedFunction = `function ${funcName} ${cleanFunctionCode} ${funcName}();`;
 
-            // Use JSON.stringify() to handle escaping properly
-            const functionString = JSON.stringify(wrappedFunction);
-
-            path.node.arguments[0] = t.stringLiteral(
-              functionString.slice(1, -1)
-            );
+            path.node.arguments[0] = t.stringLiteral(wrappedFunction);
           }
         }
       },

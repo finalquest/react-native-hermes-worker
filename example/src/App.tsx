@@ -8,7 +8,7 @@ import {
 
 // loop for a great amount of time
 function funcToRun() {
-  return 12234;
+  return { test: 'test', otroTest: 'otroTest' };
 }
 // const funcToExec = `
 //   funcToRun();
