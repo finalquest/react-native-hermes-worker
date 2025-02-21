@@ -1,10 +1,10 @@
 import { useEffect, useState } from 'react';
-import { View, StyleSheet, Button, Text, NativeModules } from 'react-native';
-// import {
-//   startProcessingThread,
-//   stopProcessingThread,
-//   enqueueItem,
-// } from 'react-native-hermes-worker';
+import { View, StyleSheet, Button, Text } from 'react-native';
+import {
+  startProcessingThread,
+  stopProcessingThread,
+  enqueueItem,
+} from 'react-native-hermes-worker';
 
 // loop for a great amount of time
 // function funcToRun() {
@@ -41,47 +41,39 @@ export default function App() {
       <Text>{`function result: ${result}`}</Text>
       <Button
         title="Start Processing Thread"
-        onPress={() =>
-          NativeModules.HermesWorker.startProcessingThread('index')
-        }
+        onPress={() => startProcessingThread()}
       />
       <Button
         title="Stop Processing Thread"
-        onPress={() => NativeModules.HermesWorker.stopProcessingThread()}
+        onPress={() => stopProcessingThread()}
       />
       <Button
         title="Enqueue Item function"
         onPress={() => {
           setResult('processing...');
 
-          return NativeModules.HermesWorker.enqueueItem(loopForeverSync).then(
-            (res: unknown) => {
-              console.log('res', res);
-              setResult(res as string);
-            }
-          );
+          return enqueueItem(loopForeverSync).then((res: unknown) => {
+            console.log('res', res);
+            setResult(res as string);
+          });
         }}
       />
       <Button
         title="Enqueue Item execute"
         onPress={() => {
           setResult('processing...');
-          return NativeModules.HermesWorker.enqueueItem(funcToExec).then(
-            (res: string) => {
-              setResult(res);
-            }
-          );
+          return enqueueItem(funcToExec).then((res: string) => {
+            setResult(res);
+          });
         }}
       />
       <Button
         title="Enqueue Item bundle"
         onPress={() => {
           setResult('processing...');
-          return NativeModules.HermesWorker.enqueueItem(funcToBundle).then(
-            (res: string) => {
-              setResult(res);
-            }
-          );
+          return enqueueItem(funcToBundle).then((res: string) => {
+            setResult(res);
+          });
         }}
       />
       <Button

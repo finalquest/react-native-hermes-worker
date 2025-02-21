@@ -1,4 +1,4 @@
-package hermesworkerexample
+package com.hermesworkerexample
 
 import com.facebook.react.ReactActivity
 import com.facebook.react.ReactActivityDelegate

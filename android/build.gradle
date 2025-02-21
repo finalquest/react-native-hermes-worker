@@ -1,3 +1,5 @@
+import java.nio.file.Paths
+
 buildscript {
   ext.getExtOrDefault = {name ->
     return rootProject.ext.has(name) ? rootProject.ext.get(name) : project.properties['HermesWorker_' + name]
@@ -24,11 +26,34 @@ def isNewArchitectureEnabled() {
   return rootProject.hasProperty("newArchEnabled") && rootProject.getProperty("newArchEnabled") == "true"
 }
 
+static def findNodeModules(baseDir) {
+  def basePath = baseDir.toPath().normalize()
+  // Node's module resolution algorithm searches up to the root directory,
+  // after which the base path will be null
+  while (basePath) {
+    def nodeModulesPath = Paths.get(basePath.toString(), "node_modules")
+    def reactNativePath = Paths.get(nodeModulesPath.toString(), "react-native")
+    if (nodeModulesPath.toFile().exists() && reactNativePath.toFile().exists()) {
+      return nodeModulesPath.toString()
+    }
+    basePath = basePath.getParent()
+  }
+  throw new GradleException("react-native-hermes-worker: Failed to find node_modules/ path!")
+}
+
+def nodeModules = findNodeModules(projectDir)
+
 apply plugin: "com.android.library"
 apply plugin: "kotlin-android"
 
 if (isNewArchitectureEnabled()) {
   apply plugin: "com.facebook.react"
+}
+
+task prepareHeaders(type: Copy) {
+  from fileTree('../cpp').filter { it.isFile() }
+  into "${project.buildDir}/headers/rnworklets/react-native-worklets-core/"
+  includeEmptyDirs = false
 }
 
 def getExtOrIntegerDefault(name) {
@@ -42,6 +67,12 @@ def supportsNamespace() {
 
   // Namespace support was added in 7.3.0
   return (major == 7 && minor >= 3) || major >= 8
+}
+
+task deleteCmakeCache() {
+  doFirst {
+    delete "${projectDir}/.cxx"
+  }
 }
 
 android {
@@ -66,7 +97,10 @@ android {
     externalNativeBuild {
       cmake {
         cppFlags "-frtti -fexceptions -Wall -fstack-protector-all"
-        arguments "-DANDROID_STL=c++_shared"
+        arguments "-DANDROID_STL=c++_shared",
+                "-DANDROID_TOOLCHAIN=clang",
+                "-DREACT_NATIVE_DIR=${nodeModules}/react-native"
+
         abiFilters (*reactNativeArchitectures())
 
         buildTypes {
@@ -88,12 +122,24 @@ android {
   }
 
   buildFeatures {
+    prefab true
     buildConfig true
   }
 
   buildTypes {
+    debug {
+      externalNativeBuild {
+        cmake {
+          arguments "-DHERMES_ENABLE_DEBUGGER=1"
+        }
+      }
+    }
     release {
-      minifyEnabled false
+      externalNativeBuild {
+        cmake {
+          arguments "-DHERMES_ENABLE_DEBUGGER=0"
+        }
+      }
     }
   }
 
@@ -108,13 +154,43 @@ android {
 
   sourceSets {
     main {
-      if (isNewArchitectureEnabled()) {
-          java.srcDirs += [
-            "generated/java",
-            "generated/jni"
-          ]
+      if (supportsNamespace()) {
+        manifest.srcFile "src/main/AndroidManifestNew.xml"
+      }
+      java {
+        srcDirs += 'src/main/java'
+        // Include new arch files and generated files if enabled
+        if (isNewArchitectureEnabled()) {
+          srcDirs += 'src/newarch/java'
+          srcDirs += 'generated/source/codegen/java'
+          srcDirs += 'generated/java'
+          srcDirs += 'generated/jni'
+        } else {
+          srcDirs += 'src/oldarch/java'
+        }
       }
     }
+  }
+
+  packagingOptions {
+    excludes = [
+      "META-INF",
+      "META-INF/**",
+      "**/libc++_shared.so",
+      "**/libfbjni.so",
+      "**/libjsi.so",
+      "**/libfolly_json.so",
+      "**/libfolly_runtime.so",
+      "**/libglog.so",
+      "**/libhermes.so",
+      "**/libhermes-executor-debug.so",
+      "**/libhermes_executor.so",
+      "**/libreactnative.so",
+      "**/libreactnativejni.so",
+      "**/libturbomodulejsijni.so",
+      "**/libreact_nativemodule_core.so",
+      "**/libjscexecutor.so",
+    ]
   }
 }
 
@@ -127,13 +203,23 @@ def kotlin_version = getExtOrDefault("kotlinVersion")
 
 dependencies {
   implementation "com.facebook.react:react-android"
+  implementation "com.facebook.react:hermes-android"
   implementation "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"
 }
+
+preBuild.dependsOn(prepareHeaders)
 
 if (isNewArchitectureEnabled()) {
   react {
     jsRootDir = file("../src/")
     libraryName = "HermesWorker"
     codegenJavaPackageName = "com.hermesworker"
+  }
+}
+
+tasks.configureEach { task ->
+  // C++ clean
+  if (task.name.contains("clean")) {
+    task.dependsOn(deleteCmakeCache)
   }
 }

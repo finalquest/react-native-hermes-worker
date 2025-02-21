@@ -1,6 +1,6 @@
 import HermesWorker from './NativeHermesWorker';
 
-export function startProcessingThread(hbcFileName: string | null): void {
+export function startProcessingThread(hbcFileName?: string): void {
   HermesWorker.startProcessingThread(hbcFileName);
 }
 
