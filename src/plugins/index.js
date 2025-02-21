@@ -1,13 +1,71 @@
 module.exports = function (babel) {
   const { types: t } = babel;
 
+  function generateES5Function(
+    functionName,
+    functionBody,
+    isAsync = false,
+    params = ''
+  ) {
+    // Convert arrow function syntax to ES5
+    let es5Body = functionBody
+      // Convert arrow functions to regular functions
+      .replace(/\(\s*\)\s*=>\s*/, '')
+      // Convert let/const to var
+      .replace(/\b(let|const)\b/g, 'var')
+      // Convert template literals to string concatenation (if needed)
+      .replace(/`([^`]*)`/g, function (_, contents) {
+        return "'" + contents.replace(/'/g, "\\'") + "'";
+      })
+      // Remove extra curly braces if they exist
+      .replace(/^{|}$/g, '')
+      .trim();
+
+    const asyncPrefix = isAsync ? 'async ' : '';
+    return `${asyncPrefix}function ${functionName}(${params}) { ${es5Body} } ${functionName}();`;
+  }
+
+  function extractFunctionParts(path, node) {
+    let functionBody = '';
+    let params = '';
+    let isAsync = false;
+
+    if (t.isFunctionDeclaration(node) || t.isFunctionExpression(node)) {
+      isAsync = node.async;
+      params = node.params
+        .map((param) => path.hub.file.code.slice(param.start, param.end))
+        .join(', ');
+      functionBody = path.hub.file.code
+        .slice(node.body.start + 1, node.body.end - 1)
+        .trim();
+    } else if (t.isArrowFunctionExpression(node)) {
+      isAsync = node.async;
+      params = node.params
+        .map((param) => path.hub.file.code.slice(param.start, param.end))
+        .join(', ');
+      if (t.isBlockStatement(node.body)) {
+        functionBody = path.hub.file.code
+          .slice(node.body.start + 1, node.body.end - 1)
+          .trim();
+      } else {
+        functionBody = `return ${path.hub.file.code.slice(node.body.start, node.body.end)};`;
+      }
+    }
+
+    return { functionBody, params, isAsync };
+  }
+
   return {
     visitor: {
       CallExpression(path) {
-        if (
-          path.node.callee.name === 'enqueueItem' &&
-          path.node.arguments.length > 0
-        ) {
+        // Only care about enqueueItem calls, regardless of how they're accessed
+        const isEnqueueItemCall =
+          (t.isIdentifier(path.node.callee) &&
+            path.node.callee.name === 'enqueueItem') ||
+          (t.isMemberExpression(path.node.callee) &&
+            path.node.callee.property.name === 'enqueueItem');
+
+        if (isEnqueueItemCall && path.node.arguments.length > 0) {
           const arg = path.node.arguments[0];
 
           // Handle function references (e.g., enqueueItem(funcToRun);)
@@ -19,60 +77,56 @@ module.exports = function (babel) {
 
               // Case 1: Function Declaration
               if (t.isFunctionDeclaration(bindingNode)) {
-                let functionCode = path.hub.file.code.slice(
-                  bindingNode.start,
-                  bindingNode.end
+                const { functionBody, params, isAsync } = extractFunctionParts(
+                  path,
+                  bindingNode
                 );
-
-                // Clean up whitespace & ensure single-line format
-                const cleanFunctionCode = functionCode.replace(/\s+/g, ' ');
-                const functionString = `${cleanFunctionCode} ${arg.name}();`;
-
+                const functionString = generateES5Function(
+                  arg.name,
+                  functionBody,
+                  isAsync,
+                  params
+                );
                 path.node.arguments[0] = t.stringLiteral(functionString);
               }
 
-              // Case 2: Arrow Function Assigned to a Variable
+              // Case 2: Arrow Function or Function Expression Assigned to a Variable
               else if (
                 t.isVariableDeclarator(bindingNode) &&
-                t.isArrowFunctionExpression(bindingNode.init)
+                (t.isArrowFunctionExpression(bindingNode.init) ||
+                  t.isFunctionExpression(bindingNode.init))
               ) {
-                let functionCode = path.hub.file.code.slice(
-                  bindingNode.init.start,
-                  bindingNode.init.end
+                const { functionBody, params, isAsync } = extractFunctionParts(
+                  path,
+                  bindingNode.init
                 );
-
-                const functionName = arg.name;
-
-                // Clean up the function formatting first
-                const cleanFunctionCode = functionCode.replace(/\s+/g, ' ');
-                // Create the complete function string with proper syntax, ensuring () is included
-                const functionString = `function ${functionName}() ${cleanFunctionCode.replace(/^\(\s*\)?\s*=>\s*/, '')} ${functionName}();`;
-
+                const functionString = generateES5Function(
+                  arg.name,
+                  functionBody,
+                  isAsync,
+                  params
+                );
                 path.node.arguments[0] = t.stringLiteral(functionString);
               }
             }
           }
 
-          // Case 3: Directly Passed Arrow Functions (Inline Functions)
+          // Case 3: Directly Passed Arrow Functions or Function Expressions
           else if (
             t.isArrowFunctionExpression(arg) ||
             t.isFunctionExpression(arg)
           ) {
-            let functionCode = path.hub.file.code.slice(arg.start, arg.end);
-
-            const funcName = 'anonymousFunction';
-
-            // ✅ Replace inline `() => {}` with `function anonymousFunction() {}`
-            functionCode = functionCode.replace(
-              /^\(\)?\s*=>\s*/,
-              `function ${funcName} `
+            const { functionBody, params, isAsync } = extractFunctionParts(
+              path,
+              arg
             );
-
-            // Clean up formatting
-            const cleanFunctionCode = functionCode.replace(/\s+/g, ' ');
-            const wrappedFunction = `function ${funcName} ${cleanFunctionCode} ${funcName}();`;
-
-            path.node.arguments[0] = t.stringLiteral(wrappedFunction);
+            const functionString = generateES5Function(
+              'anonymousFunction',
+              functionBody,
+              isAsync,
+              params
+            );
+            path.node.arguments[0] = t.stringLiteral(functionString);
           }
         }
       },
