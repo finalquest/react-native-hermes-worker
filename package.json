@@ -1,6 +1,6 @@
 {
   "name": "react-native-hermes-worker",
-  "version": "0.1.0",
+  "version": "0.0.1",
   "description": "A react-native js woker using hermes runtime",
   "source": "./src/index.tsx",
   "main": "./lib/commonjs/index.js",
@@ -86,7 +86,7 @@
     "react": "18.3.1",
     "react-native": "0.77.1",
     "react-native-builder-bob": "^0.36.0",
-    "release-it": "^17.10.0",
+    "release-it": "^17.11.0",
     "turbo": "^1.10.7",
     "typescript": "^5.2.2"
   },
@@ -114,20 +114,9 @@
     ]
   },
   "release-it": {
-    "git": {
-      "commitMessage": "chore: release ${version}",
-      "tagName": "v${version}"
-    },
-    "npm": {
-      "publish": true
-    },
+    "$schema": "https://unpkg.com/release-it/schema/release-it.json",
     "github": {
       "release": true
-    },
-    "plugins": {
-      "@release-it/conventional-changelog": {
-        "preset": "angular"
-      }
     }
   },
   "eslintConfig": {
