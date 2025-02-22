@@ -115,8 +115,15 @@
   },
   "release-it": {
     "$schema": "https://unpkg.com/release-it/schema/release-it.json",
+    "git": {
+      "commitMessage": "chore: release ${version}",
+      "tagName": "v${version}"
+    },
     "github": {
       "release": true
+    },
+    "npm": {
+      "publish": true
     }
   },
   "eslintConfig": {
