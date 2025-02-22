@@ -6,6 +6,86 @@ pluginTester({
   pluginName: 'babel-plugin-transform-enqueue-item',
   tests: [
     {
+      title: 'Transforms function call with number literal argument',
+      code: `
+        const loopForever = (count) => {
+          for (let i = 0; i < count; i++) {}
+          return 'done';
+        };
+        enqueueItem(loopForever(100000000));
+      `,
+      output: `
+        const loopForever = (count) => {
+          for (let i = 0; i < count; i++) {}
+          return 'done';
+        };
+        enqueueItem(
+          "(function() { function loopForever(count) { for (var i = 0; i < count; i++) {} return 'done'; } return loopForever(100000000); })()"
+        );
+      `,
+    },
+    {
+      title: 'Transforms function call with variable argument',
+      code: `
+        const amount = 100000000;
+        const loopForever = (count) => {
+          for (let i = 0; i < count; i++) {}
+          return 'done';
+        };
+        enqueueItem(loopForever(amount));
+      `,
+      output: `
+        const amount = 100000000;
+        const loopForever = (count) => {
+          for (let i = 0; i < count; i++) {}
+          return 'done';
+        };
+        enqueueItem(
+          "(function() { function loopForever(count) { for (var i = 0; i < count; i++) {} return 'done'; } return loopForever(amount); })()"
+        );
+      `,
+    },
+    {
+      title: 'Transforms function call with expression argument',
+      code: `
+        const base = 1000;
+        const loopForever = (count) => {
+          for (let i = 0; i < count; i++) {}
+          return 'done';
+        };
+        enqueueItem(loopForever(base * 100));
+      `,
+      output: `
+        const base = 1000;
+        const loopForever = (count) => {
+          for (let i = 0; i < count; i++) {}
+          return 'done';
+        };
+        enqueueItem(
+          "(function() { function loopForever(count) { for (var i = 0; i < count; i++) {} return 'done'; } return loopForever(base * 100); })()"
+        );
+      `,
+    },
+    {
+      title: 'Transforms function call with multiple arguments',
+      code: `
+        const processData = (count, label) => {
+          for (let i = 0; i < count; i++) {}
+          return label;
+        };
+        enqueueItem(processData(1000, "processing"));
+      `,
+      output: `
+        const processData = (count, label) => {
+          for (let i = 0; i < count; i++) {}
+          return label;
+        };
+        enqueueItem(
+          '(function() { function processData(count, label) { for (var i = 0; i < count; i++) {} return label; } return processData(1000, "processing"); })()'
+        );
+      `,
+    },
+    {
       title: 'Transforms function declaration',
       code: `
         function funcToRun() {

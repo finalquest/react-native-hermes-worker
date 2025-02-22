@@ -25,6 +25,27 @@ module.exports = function (babel) {
     return `${asyncPrefix}function ${functionName}(${params}) { ${es5Body} } ${functionName}();`;
   }
 
+  function generateFunctionWithArgs(
+    functionName,
+    functionBody,
+    params = '',
+    args = [],
+    isAsync = false
+  ) {
+    let es5Body = functionBody
+      .replace(/\(\s*\)\s*=>\s*/, '')
+      .replace(/\b(let|const)\b/g, 'var')
+      .replace(/`([^`]*)`/g, function (_, contents) {
+        return "'" + contents.replace(/'/g, "\\'") + "'";
+      })
+      .replace(/^{|}$/g, '')
+      .replace(/\s+/g, ' ') // Replace multiple spaces with single space
+      .trim();
+
+    const asyncPrefix = isAsync ? 'async ' : '';
+    return `(function() { ${asyncPrefix}function ${functionName}(${params}) { ${es5Body} } return ${functionName}(${args.join(', ')}); })()`;
+  }
+
   function extractFunctionParts(path, node) {
     let functionBody = '';
     let params = '';
@@ -68,8 +89,47 @@ module.exports = function (babel) {
         if (isEnqueueItemCall && path.node.arguments.length > 0) {
           const arg = path.node.arguments[0];
 
-          // Handle function references (e.g., enqueueItem(funcToRun);)
-          if (t.isIdentifier(arg)) {
+          // New Case: Handle function calls with arguments
+          if (t.isCallExpression(arg)) {
+            const callee = arg.callee;
+            if (t.isIdentifier(callee)) {
+              const binding = path.scope.getBinding(callee.name);
+              if (binding) {
+                const bindingNode = binding.path.node;
+                let functionNode;
+
+                if (t.isFunctionDeclaration(bindingNode)) {
+                  functionNode = bindingNode;
+                } else if (
+                  t.isVariableDeclarator(bindingNode) &&
+                  (t.isArrowFunctionExpression(bindingNode.init) ||
+                    t.isFunctionExpression(bindingNode.init))
+                ) {
+                  functionNode = bindingNode.init;
+                }
+
+                if (functionNode) {
+                  const { functionBody, params, isAsync } =
+                    extractFunctionParts(path, functionNode);
+
+                  // Extract argument values
+                  const args = arg.arguments.map((argNode) =>
+                    path.hub.file.code.slice(argNode.start, argNode.end)
+                  );
+
+                  const functionString = generateFunctionWithArgs(
+                    callee.name,
+                    functionBody,
+                    params,
+                    args,
+                    isAsync
+                  );
+
+                  path.node.arguments[0] = t.stringLiteral(functionString);
+                }
+              }
+            }
+          } else if (t.isIdentifier(arg)) {
             const binding = path.scope.getBinding(arg.name);
 
             if (binding) {
