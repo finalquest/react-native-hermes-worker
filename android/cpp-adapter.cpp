@@ -11,34 +11,38 @@ Java_com_hermesworker_HermesWorkerModule_nativeIsProcessingThreadRunning(JNIEnv 
 }
 
 extern "C"
-JNIEXPORT jstring JNICALL
-Java_com_hermesworker_HermesWorkerModule_nativeEnqueueItem(JNIEnv *env, jclass type, jstring item)
+JNIEXPORT void JNICALL
+Java_com_hermesworker_HermesWorkerModule_nativeEnqueueItem(JNIEnv *env, jclass type, jstring item, jobject callback)
 {
     const char *nativeString = env->GetStringUTFChars(item, 0);
-    std::string result;
     
-    // Create synchronization primitives
-    std::mutex mtx;
-    std::condition_variable cv;
-    bool ready = false;
+    // Get the callback class and methods
+    jclass callbackClass = env->GetObjectClass(callback);
+    jmethodID onSuccessMethod = env->GetMethodID(callbackClass, "onSuccess", "(Ljava/lang/String;)V");
+    jmethodID onErrorMethod = env->GetMethodID(callbackClass, "onError", "(Ljava/lang/String;)V");
     
-    hermesworker::enqueueItem(nativeString, [&](bool success, const std::string& response) {
-        std::lock_guard<std::mutex> lock(mtx);
+    // Create global references for use in the worker thread
+    jobject globalCallback = env->NewGlobalRef(callback);
+    JavaVM* jvm;
+    env->GetJavaVM(&jvm);
+    
+    hermesworker::enqueueItem(nativeString, [jvm, globalCallback, onSuccessMethod, onErrorMethod](bool success, const std::string& response) {
+        JNIEnv* env;
+        jvm->AttachCurrentThread(&env, nullptr);
+        
+        jstring jResponse = env->NewStringUTF(response.c_str());
         if (success) {
-            result = response;
+            env->CallVoidMethod(globalCallback, onSuccessMethod, jResponse);
         } else {
-            result = "Error: " + response;
+            env->CallVoidMethod(globalCallback, onErrorMethod, jResponse);
         }
-        ready = true;
-        cv.notify_one();
+        
+        env->DeleteLocalRef(jResponse);
+        env->DeleteGlobalRef(globalCallback);
+        jvm->DetachCurrentThread();
     });
     
-    // Wait for the callback to complete
-    std::unique_lock<std::mutex> lock(mtx);
-    cv.wait(lock, [&ready]{ return ready; });
-    
     env->ReleaseStringUTFChars(item, nativeString);
-    return env->NewStringUTF(result.c_str());
 }
 
 extern "C"

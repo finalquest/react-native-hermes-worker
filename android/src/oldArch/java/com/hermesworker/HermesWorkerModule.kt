@@ -1,6 +1,8 @@
 package com.hermesworker
 
 import com.facebook.react.bridge.ReactApplicationContext
+import com.facebook.react.bridge.ReactContextBaseJavaModule
+import com.facebook.react.bridge.ReactMethod
 import com.facebook.react.module.annotations.ReactModule
 import com.facebook.react.bridge.Promise
 import android.util.Log
@@ -13,7 +15,7 @@ interface HermesCallback {
 
 @ReactModule(name = HermesWorkerModule.NAME)
 class HermesWorkerModule(reactContext: ReactApplicationContext) :
-  NativeHermesWorkerSpec(reactContext) {
+  ReactContextBaseJavaModule(reactContext) {
   
   external fun nativeEnqueueItem(item: String, callback: HermesCallback)
   external fun nativeStartProcessingThread(bytecode: ByteArray)
@@ -31,34 +33,32 @@ class HermesWorkerModule(reactContext: ReactApplicationContext) :
     }
   }
 
-  override fun enqueueItem(item: String, promise: Promise) {
+  @ReactMethod
+  fun enqueueItem(item: String, promise: Promise) {
     if (!nativeIsProcessingThreadRunning()) {
         Log.d(NAME, "Processing thread not running. Starting with default runtime")
         nativeStartProcessingThread(ByteArray(0))
     }
-    try {
-        Log.d(NAME, "Processing item Module")
-        // Create a callback object that will handle the eventual result
-        val callback = object : HermesCallback {
-            override fun onSuccess(result: String) {
-                // This will be called later when C++ finishes processing
-                promise.resolve(result)
-            }
-            
-            override fun onError(error: String) {
-                // This will be called later if C++ encounters an error
-                promise.reject("PROCESSING_ERROR", error)
-            }
+    
+    // Create a callback object that will handle the eventual result
+    val callback = object : HermesCallback {
+        override fun onSuccess(result: String) {
+            // This will be called later when C++ finishes processing
+            promise.resolve(result)
         }
         
-        // Pass both the item and the callback to the native code
-        nativeEnqueueItem(item, callback)
-    } catch (e: Exception) {
-        promise.reject("ENQUEUE_ERROR", e)
+        override fun onError(error: String) {
+            // This will be called later if C++ encounters an error
+            promise.reject("PROCESSING_ERROR", error)
+        }
     }
+    
+    // Pass both the item and the callback to the native code
+    nativeEnqueueItem(item, callback)
   }
 
-  override fun startProcessingThread(fileName: String?) {
+  @ReactMethod
+  fun startProcessingThread(fileName: String?) {
       try {
         if (nativeIsProcessingThreadRunning()) {
               Log.d(NAME, "Processing thread already running")
@@ -86,7 +86,8 @@ class HermesWorkerModule(reactContext: ReactApplicationContext) :
       }
   }
 
-  override fun stopProcessingThread() {
+  @ReactMethod
+  fun stopProcessingThread() {
       try {
           nativeStopProcessingThread()
       } catch (e: Exception) {
