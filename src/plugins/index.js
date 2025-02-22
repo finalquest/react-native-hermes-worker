@@ -54,7 +54,12 @@ module.exports = function (babel) {
     if (t.isFunctionDeclaration(node) || t.isFunctionExpression(node)) {
       isAsync = node.async;
       params = node.params
-        .map((param) => path.hub.file.code.slice(param.start, param.end))
+        .map((param) => {
+          // Use the parameter name from the AST instead of raw source code
+          return t.isIdentifier(param)
+            ? param.name
+            : path.hub.file.code.slice(param.start, param.end);
+        })
         .join(', ');
       functionBody = path.hub.file.code
         .slice(node.body.start + 1, node.body.end - 1)
@@ -62,7 +67,12 @@ module.exports = function (babel) {
     } else if (t.isArrowFunctionExpression(node)) {
       isAsync = node.async;
       params = node.params
-        .map((param) => path.hub.file.code.slice(param.start, param.end))
+        .map((param) => {
+          // Use the parameter name from the AST instead of raw source code
+          return t.isIdentifier(param)
+            ? param.name
+            : path.hub.file.code.slice(param.start, param.end);
+        })
         .join(', ');
       if (t.isBlockStatement(node.body)) {
         functionBody = path.hub.file.code

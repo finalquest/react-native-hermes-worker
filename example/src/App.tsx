@@ -18,8 +18,8 @@ const funcToBundle = `
   pepito(12222222);
 `;
 
-const loopForeverSync = () => {
-  for (let i = 0; i < 100000000; i++) {}
+const loopForeverSync = (amount: number) => {
+  for (let i = 0; i < amount; i++) {}
   return 'pepito';
 };
 
@@ -52,10 +52,12 @@ export default function App() {
         onPress={() => {
           setResult('processing...');
 
-          return enqueueItem(loopForeverSync).then((res: unknown) => {
-            console.log('res', res);
-            setResult(res as string);
-          });
+          return enqueueItem(loopForeverSync(100000000)).then(
+            (res: unknown) => {
+              console.log('res', res);
+              setResult(res as string);
+            }
+          );
         }}
       />
       <Button
@@ -80,7 +82,7 @@ export default function App() {
         title="Enqueue Item sync"
         onPress={() => {
           setResult('processing...');
-          loopForeverSync();
+          loopForeverSync(100000000);
           setResult('done');
         }}
       />

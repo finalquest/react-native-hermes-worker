@@ -4,6 +4,11 @@ const myPlugin = require('../index'); // Import the Babel plugin
 pluginTester({
   plugin: myPlugin,
   pluginName: 'babel-plugin-transform-enqueue-item',
+  babelOptions: {
+    parserOpts: {
+      plugins: ['typescript'],
+    },
+  },
   tests: [
     {
       title: 'Transforms function call with number literal argument',
@@ -330,6 +335,44 @@ pluginTester({
         };
         enqueueItem(
           "function complexFunc() { var items = [];\\n  var max = 10;\\n  for (var i = 0; i < max; i++) {\\n    items.push('Item \${i}');\\n  }\\n  return items; } complexFunc();"
+        );
+      `,
+    },
+    {
+      title: 'Transforms function call with TypeScript types',
+      code: `
+        const loopForeverSync = (amount: number) => {
+          for (let i = 0; i < amount; i++) {}
+          return 'pepito';
+        };
+        enqueueItem(loopForeverSync(100000000));
+      `,
+      output: `
+        const loopForeverSync = (amount: number) => {
+          for (let i = 0; i < amount; i++) {}
+          return 'pepito';
+        };
+        enqueueItem(
+          "(function() { function loopForeverSync(amount) { for (var i = 0; i < amount; i++) {} return 'pepito'; } return loopForeverSync(100000000); })()"
+        );
+      `,
+    },
+    {
+      title: 'Transforms function call with multiple TypeScript types',
+      code: `
+        const processData = (count: number, label: string) => {
+          for (let i = 0; i < count; i++) {}
+          return label;
+        };
+        enqueueItem(processData(1000, "processing"));
+      `,
+      output: `
+        const processData = (count: number, label: string) => {
+          for (let i = 0; i < count; i++) {}
+          return label;
+        };
+        enqueueItem(
+          '(function() { function processData(count, label) { for (var i = 0; i < count; i++) {} return label; } return processData(1000, "processing"); })()'
         );
       `,
     },
