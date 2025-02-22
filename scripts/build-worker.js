@@ -4,23 +4,47 @@ const path = require('path');
 const fs = require('fs');
 const child_process = require('child_process');
 
-// Update Hermes path to match React Native's location
-const HERMES_ENGINE_PATH = path.join(
-  __dirname,
-  '../example/ios/Pods/hermes-engine'
-);
-const HERMES_PATH = path.join(HERMES_ENGINE_PATH, 'destroot/bin/hermesc');
+function findHermesCompiler() {
+  // Get platform-specific folder for Hermes
+  const platform = process.platform;
+  let hermesPlatformFolder;
+  switch (platform) {
+    case 'darwin':
+      hermesPlatformFolder = 'osx-bin';
+      break;
+    case 'linux':
+      hermesPlatformFolder = 'linux64-bin';
+      break;
+    case 'win32':
+      hermesPlatformFolder = 'win64-bin';
+      break;
+    default:
+      console.error(`Unsupported platform: ${platform}`);
+      process.exit(1);
+  }
 
-const configPath = path.join(process.cwd(), 'hermes-workers.json');
+  // Get Hermes path from react-native
+  const hermesPath = path.join(
+    __dirname,
+    '../node_modules/react-native/sdks/hermesc',
+    hermesPlatformFolder,
+    platform === 'win32' ? 'hermesc.exe' : 'hermesc'
+  );
 
-// Add check for Hermes path
-if (!fs.existsSync(HERMES_PATH)) {
-  console.error(`Error: Hermes compiler not found at ${HERMES_PATH}`);
+  if (fs.existsSync(hermesPath)) {
+    return hermesPath;
+  }
+
+  console.error('Error: Hermes compiler not found at:');
+  console.error(`- Path: ${hermesPath}`);
   console.error(
-    'Make sure you have run "pod install" in the example/ios directory'
+    'Make sure you have react-native installed with Hermes enabled'
   );
   process.exit(1);
 }
+
+const HERMES_PATH = findHermesCompiler();
+const configPath = path.join(process.cwd(), 'hermes-workers.json');
 
 if (!fs.existsSync(configPath)) {
   console.error('Error: hermes-workers.json not found in project root');
@@ -69,7 +93,6 @@ function buildForPlatform(platform, entryPoint, bundleOutput, hermesOutput) {
 }
 
 for (const entryPoint of config) {
-  console.log('ENTRYYYY', entryPoint);
   const workerName = path.basename(entryPoint, path.extname(entryPoint));
 
   // iOS paths for this worker
@@ -84,6 +107,19 @@ for (const entryPoint of config) {
     `${workerName}.worker.bundle.hbc`
   );
 
+  // Android paths for this worker
+  const androidBundle = path.join(
+    process.cwd(),
+    'android/src/main/assets',
+    `${workerName}.worker.bundle.js`
+  );
+  const androidHermes = path.join(
+    process.cwd(),
+    'android/src/main/assets',
+    `${workerName}.worker.bundle.hbc`
+  );
+
   // Build for each platform
   buildForPlatform('ios', entryPoint, iosBundle, iosHermes);
+  buildForPlatform('android', entryPoint, androidBundle, androidHermes);
 }
