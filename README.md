@@ -4,28 +4,6 @@
 
 A React Native library that enables JavaScript code execution in a separate thread using the Hermes engine.
 
-## Installation
-
-    ```bash
-    npm install react-native-hermes-worker
-    # or
-    yarn add react-native-hermes-worker
-    ```
-
-### Babel Configuration
-
-Add the Hermes Worker babel plugin to your app's babel.config.js:
-
-    ```javascript
-    module.exports = {
-      plugins: [
-        'react-native-hermes-worker/plugin'
-      ]
-    };
-    ```
-
-This plugin transforms JavaScript functions into a format that can be executed in the worker thread.
-
 ## Key Features
 
 - Run JavaScript code in a background thread to avoid blocking the main UI thread
@@ -34,23 +12,45 @@ This plugin transforms JavaScript functions into a format that can be executed i
 - Cross-platform support (iOS & Android)
 - TypeScript support
 
+## Installation
+
+```bash
+npm install react-native-hermes-worker
+# or
+yarn add react-native-hermes-worker
+```
+
+### Babel Configuration
+
+Add the Hermes Worker babel plugin to your app's babel.config.js:
+
+```javascript
+module.exports = {
+    plugins: [
+    'react-native-hermes-worker/plugin'
+    ]
+};
+```
+
+This plugin transforms JavaScript functions into a format that can be executed in the worker thread.
+
 ## Basic Usage
 
-    ```typescript
-    import { startProcessingThread, stopProcessingThread, enqueueItem } from 'react-native-hermes-worker';
+```typescript
+import { startProcessingThread, stopProcessingThread, enqueueItem } from 'react-native-hermes-worker';
 
-    // Start the worker thread
-    startProcessingThread();
+// Start the worker thread
+startProcessingThread();
 
-    // Execute code in background
-    const result = await enqueueItem(() => {
-      // Heavy computation here
-      return "computation result";
-    });
+// Execute code in background
+const result = await enqueueItem(() => {
+    // Heavy computation here
+    return "computation result";
+});
 
-    // Stop the worker thread when done
-    stopProcessingThread();
-    ```
+// Stop the worker thread when done
+stopProcessingThread();
+```
 
 ## Custom Hermes Bytecode
 
@@ -60,32 +60,38 @@ You can compile custom JavaScript code into Hermes bytecode to initialize the wo
 
 Create a JavaScript file with your worker code:
 
-    ```javascript
-    // worker/index.js
-    
-    // Define functions available to the worker
-    function heavyComputation(data) {
-      // Your computation logic
-      return result;
-    }
+```javascript
+// worker/index.js
 
-    // Expose functions to the worker scope
-    globalThis.heavyComputation = heavyComputation;
-    ```
+// Define functions available to the worker
+function heavyComputation(data) {
+    // Your computation logic
+    return result;
+}
+
+// Expose functions to the worker scope
+globalThis.heavyComputation = heavyComputation;
+```
 
 ### 2. Configure Worker Files
 
 Create a `hermes-workers.json` in your project root:
 
-    ```json
-    [
-      "./src/worker/index.js"
-    ]
-    ```
+```json
+[
+    "./src/worker/index.js"
+]
+```
 
 ### 3. Compile Bytecode
 
-The library will automatically compile your worker files into Hermes bytecode during the build process. The compiled files will be placed in:
+Run the compile script from your project root:
+
+```bash
+npx compile-hermes-bundles
+```
+
+This will compile your worker files into Hermes bytecode. The compiled files will be placed in:
 
 - iOS: `ios/assets/index.worker.bundle.hbc`
 - Android: `android/app/src/main/assets/index.worker.bundle.hbc`
@@ -108,14 +114,14 @@ No additional setup required. The asset will be automatically bundled.
 
 ### 5. Use Custom Bytecode
 
-    ```typescript
-    // Initialize worker with custom bytecode
-    // Note: Only pass the base name of your entry file, without extensions
-    startProcessingThread('index');  // Will look for 'index.worker.bundle.hbc'
+```typescript
+// Initialize worker with custom bytecode
+// Note: Only pass the base name of your entry file, without extensions
+startProcessingThread('index');  // Will look for 'index.worker.bundle.hbc'
 
-    // Now you can call your predefined functions
-    const result = await enqueueItem('heavyComputation(data)');
-    ```
+// Now you can call your predefined functions
+const result = await enqueueItem('heavyComputation(data)');
+```
 
 ## Platform Requirements
 
@@ -131,15 +137,15 @@ No additional setup required. The asset will be automatically bundled.
 
 ## Development Setup
 
-    ```bash
-    # Install dependencies
-    yarn install
+```bash
+# Install dependencies
+yarn install
 
-    # Run example app
-    yarn example ios
-    # or
-    yarn example android
-    ```
+# Run example app
+yarn example ios
+# or
+yarn example android
+```
 
 ## License
 
