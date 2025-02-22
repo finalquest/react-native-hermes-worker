@@ -1,17 +1,8 @@
 
 
-````markdown
 # React Native Hermes Worker
 
 A React Native library that enables JavaScript code execution in a separate thread using the Hermes engine.
-
-## Key Features
-
-- Run JavaScript code in a background thread to avoid blocking the main UI thread
-- Uses Hermes engine for JavaScript execution
-- Supports both old and new React Native architectures
-- Cross-platform support (iOS & Android)
-- TypeScript support
 
 ## Installation
 
@@ -20,6 +11,28 @@ A React Native library that enables JavaScript code execution in a separate thre
     # or
     yarn add react-native-hermes-worker
     ```
+
+### Babel Configuration
+
+Add the Hermes Worker babel plugin to your app's babel.config.js:
+
+    ```javascript
+    module.exports = {
+      plugins: [
+        'react-native-hermes-worker/plugin'
+      ]
+    };
+    ```
+
+This plugin transforms JavaScript functions into a format that can be executed in the worker thread.
+
+## Key Features
+
+- Run JavaScript code in a background thread to avoid blocking the main UI thread
+- Uses Hermes engine for JavaScript execution
+- Supports both old and new React Native architectures
+- Cross-platform support (iOS & Android)
+- TypeScript support
 
 ## Basic Usage
 
@@ -104,24 +117,6 @@ No additional setup required. The asset will be automatically bundled.
     const result = await enqueueItem('heavyComputation(data)');
     ```
 
-## API Reference
-
-### `startProcessingThread(hbcFileName?: string)`
-
-Starts the worker thread. If providing a custom bytecode file, only pass the base name of your entry file (e.g., 'index' for 'index.worker.bundle.hbc'). The library will automatically append the required extensions.
-
-### `stopProcessingThread()`
-
-Stops the worker thread and cleans up resources.
-
-### `enqueueItem(item: string | (() => any))`
-
-Enqueues code to be executed in the worker thread. Accepts either:
-- A string containing JavaScript code
-- A function to be executed
-
-Returns a Promise that resolves with the execution result.
-
 ## Platform Requirements
 
 - iOS 15.1+
@@ -153,4 +148,3 @@ MIT License - see LICENSE file for details
 ## Contributing
 
 See CONTRIBUTING.md for details on how to contribute to this project.
-````
