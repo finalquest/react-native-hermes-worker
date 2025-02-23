@@ -25,7 +25,7 @@ pluginTester({
           return 'done';
         };
         enqueueItem(
-          "(function() { function loopForever(count) { for (var i = 0; i < count; i++) {} return 'done'; } return loopForever(100000000); })()"
+          " function loopForever(count) { for (let i = 0; i < count; i++) {}\\n  return 'done'; } return loopForever(100000000);"
         );
       `,
     },
@@ -46,7 +46,7 @@ pluginTester({
           return 'done';
         };
         enqueueItem(
-          "(function() { function loopForever(count) { for (var i = 0; i < count; i++) {} return 'done'; } return loopForever(amount); })()"
+          "const amount = 100000000; function loopForever(count) { for (let i = 0; i < count; i++) {}\\n  return 'done'; } return loopForever(amount);"
         );
       `,
     },
@@ -67,7 +67,7 @@ pluginTester({
           return 'done';
         };
         enqueueItem(
-          "(function() { function loopForever(count) { for (var i = 0; i < count; i++) {} return 'done'; } return loopForever(base * 100); })()"
+          " function loopForever(count) { for (let i = 0; i < count; i++) {}\\n  return 'done'; } return loopForever(base * 100);"
         );
       `,
     },
@@ -86,7 +86,7 @@ pluginTester({
           return label;
         };
         enqueueItem(
-          '(function() { function processData(count, label) { for (var i = 0; i < count; i++) {} return label; } return processData(1000, "processing"); })()'
+          ' function processData(count, label) { for (let i = 0; i < count; i++) {}\\n  return label; } return processData(1000, "processing");'
         );
       `,
     },
@@ -353,7 +353,7 @@ pluginTester({
           return 'pepito';
         };
         enqueueItem(
-          "(function() { function loopForeverSync(amount) { for (var i = 0; i < amount; i++) {} return 'pepito'; } return loopForeverSync(100000000); })()"
+          " function loopForeverSync(amount) { for (let i = 0; i < amount; i++) {}\\n  return 'pepito'; } return loopForeverSync(100000000);"
         );
       `,
     },
@@ -372,7 +372,64 @@ pluginTester({
           return label;
         };
         enqueueItem(
-          '(function() { function processData(count, label) { for (var i = 0; i < count; i++) {} return label; } return processData(1000, "processing"); })()'
+          ' function processData(count, label) { for (let i = 0; i < count; i++) {}\\n  return label; } return processData(1000, "processing");'
+        );
+      `,
+    },
+    {
+      title: 'Handles external Hermes context functions - basic case',
+      code: `
+        import { externalFunc } from 'some-module';
+        enqueueItem(externalFunc());
+      `,
+      output: `
+        import { externalFunc } from 'some-module';
+        enqueueItem('externalFunc()');
+      `,
+    },
+    {
+      title:
+        'Handles external Hermes context functions - with literal arguments',
+      code: `
+        import { externalFunc } from 'some-module';
+        enqueueItem(externalFunc(123, "test"));
+      `,
+      output: `
+        import { externalFunc } from 'some-module';
+        enqueueItem('externalFunc(123, "test")');
+      `,
+    },
+    {
+      title: 'Handles external Hermes context functions - with expressions',
+      code: `
+        import { processData } from 'worker-functions';
+        const count = 1000;
+        const label = "processing";
+        enqueueItem(processData(count * 2, label + "_task"));
+      `,
+      output: `
+        import { processData } from 'worker-functions';
+        const count = 1000;
+        const label = 'processing';
+        enqueueItem('processData(count * 2, label + "_task")');
+      `,
+    },
+    {
+      title: 'Transforms local function with variable expression argument',
+      code: `
+        const loop = (value) => {
+          return value;
+        };
+        const newValue = 123 + 123;
+        enqueueItem(loop(newValue));
+      `,
+      output: `
+        const loop = (value) => {
+          return value;
+        };
+        const newValue = 123 + 123;
+        enqueueItem(
+          'const newValue = 123 + 123; function loop(value) { return value; } return loop(newValue);'
         );
       `,
     },

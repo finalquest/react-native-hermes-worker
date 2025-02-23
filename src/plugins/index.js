@@ -104,6 +104,26 @@ module.exports = function (babel) {
             const callee = arg.callee;
             if (t.isIdentifier(callee)) {
               const binding = path.scope.getBinding(callee.name);
+
+              // Check if there's no binding or if the binding is from an import
+              if (
+                !binding ||
+                (binding.path.parent &&
+                  t.isImportDeclaration(binding.path.parent))
+              ) {
+                // Get the arguments as a string
+                const argsString = arg.arguments
+                  .map((argNode) =>
+                    path.hub.file.code.slice(argNode.start, argNode.end)
+                  )
+                  .join(', ');
+
+                path.node.arguments[0] = t.stringLiteral(
+                  `${callee.name}(${argsString})`
+                );
+                return;
+              }
+
               if (binding) {
                 const bindingNode = binding.path.node;
                 let functionNode;
@@ -122,18 +142,40 @@ module.exports = function (babel) {
                   const { functionBody, params, isAsync } =
                     extractFunctionParts(path, functionNode);
 
-                  // Extract argument values
-                  const args = arg.arguments.map((argNode) =>
-                    path.hub.file.code.slice(argNode.start, argNode.end)
-                  );
+                  // Extract argument values and their declarations if they are variables
+                  const args = arg.arguments.map((argNode) => {
+                    if (t.isIdentifier(argNode)) {
+                      const argBinding = path.scope.getBinding(argNode.name);
+                      if (
+                        argBinding &&
+                        t.isVariableDeclarator(argBinding.path.node)
+                      ) {
+                        const declaration = path.hub.file.code.slice(
+                          argBinding.path.node.init.start,
+                          argBinding.path.node.init.end
+                        );
+                        return {
+                          name: argNode.name,
+                          value: argNode.name,
+                          declaration: `const ${argNode.name} = ${declaration};`,
+                        };
+                      }
+                    }
+                    return {
+                      value: path.hub.file.code.slice(
+                        argNode.start,
+                        argNode.end
+                      ),
+                    };
+                  });
 
-                  const functionString = generateFunctionWithArgs(
-                    callee.name,
-                    functionBody,
-                    params,
-                    args,
-                    isAsync
-                  );
+                  // Build the function string including variable declarations
+                  const declarations = args
+                    .filter((arg) => arg.declaration)
+                    .map((arg) => arg.declaration)
+                    .join(' ');
+
+                  const functionString = `${declarations} function ${callee.name}(${params}) { ${functionBody} } return ${callee.name}(${args.map((arg) => arg.value).join(', ')});`;
 
                   path.node.arguments[0] = t.stringLiteral(functionString);
                 }
