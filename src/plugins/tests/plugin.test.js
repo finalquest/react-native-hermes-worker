@@ -25,7 +25,7 @@ pluginTester({
           return 'done';
         };
         enqueueItem(
-          " function loopForever(count) { for (let i = 0; i < count; i++) {}\\n  return 'done'; } return loopForever(100000000);"
+          "function loopForever(count) { for (let i = 0; i < count; i++) {} return 'done'; } return loopForever(100000000);"
         );
       `,
     },
@@ -46,7 +46,7 @@ pluginTester({
           return 'done';
         };
         enqueueItem(
-          "const amount = 100000000; function loopForever(count) { for (let i = 0; i < count; i++) {}\\n  return 'done'; } return loopForever(amount);"
+          \`function loopForever(count) { for (let i = 0; i < count; i++) {} return 'done'; } return loopForever(\${amount});\`
         );
       `,
     },
@@ -67,7 +67,7 @@ pluginTester({
           return 'done';
         };
         enqueueItem(
-          " function loopForever(count) { for (let i = 0; i < count; i++) {}\\n  return 'done'; } return loopForever(base * 100);"
+          \`function loopForever(count) { for (let i = 0; i < count; i++) {} return 'done'; } return loopForever(\${base} * 100);\`
         );
       `,
     },
@@ -86,7 +86,7 @@ pluginTester({
           return label;
         };
         enqueueItem(
-          ' function processData(count, label) { for (let i = 0; i < count; i++) {}\\n  return label; } return processData(1000, "processing");'
+          'function processData(count, label) { for (let i = 0; i < count; i++) {} return label; } return processData(1000, "processing");'
         );
       `,
     },
@@ -124,7 +124,7 @@ pluginTester({
           };
         }
         enqueueItem(
-          "function funcToRun() { return {\\n    test: 'test',\\n    otroTest: 'otroTest',\\n  }; } funcToRun();"
+          "function funcToRun() { return { test: 'test', otroTest: 'otroTest', }; } funcToRun();"
         );
       `,
     },
@@ -252,7 +252,7 @@ pluginTester({
           return 'pepito';
         };
         enqueueItem(
-          "function loopForeverSync() { for (var i = 0; i < 100000000; i++) {}\\n  return 'pepito'; } loopForeverSync();"
+          "function loopForeverSync() { for (var i = 0; i < 100000000; i++) {} return 'pepito'; } loopForeverSync();"
         );
       `,
     },
@@ -282,7 +282,7 @@ pluginTester({
           };
         };
         enqueueItem(
-          'function complexFunc() { var result = [];\\n  for (var i = 0; i < 10; i++) {\\n    result.push(i * 2);\\n  }\\n  return { data: result, sum: result.reduce(function(a, b) { return a + b; }, 0) }; } complexFunc();'
+          'function complexFunc() { var result = []; for (var i = 0; i < 10; i++) { result.push(i * 2); } return { data: result, sum: result.reduce(function(a, b) { return a + b; }, 0) }; } complexFunc();'
         );
       `,
     },
@@ -307,7 +307,7 @@ pluginTester({
           return \`Result: \${count}\`;
         };
         _reactNative.NativeModules.HermesWorker.enqueueItem(
-          "function loopForeverSync() { var count = 0;\\n  for (var i = 0; i < 100000000; i++) {\\n    count += i;\\n  }\\n  return 'Result: \${count}'; } loopForeverSync();"
+          "function loopForeverSync() { var count = 0; for (var i = 0; i < 100000000; i++) { count += i; } return 'Result: \${count}'; } loopForeverSync();"
         );
       `,
     },
@@ -334,7 +334,7 @@ pluginTester({
           return items;
         };
         enqueueItem(
-          "function complexFunc() { var items = [];\\n  var max = 10;\\n  for (var i = 0; i < max; i++) {\\n    items.push('Item \${i}');\\n  }\\n  return items; } complexFunc();"
+          "function complexFunc() { var items = []; var max = 10; for (var i = 0; i < max; i++) { items.push('Item \${i}'); } return items; } complexFunc();"
         );
       `,
     },
@@ -353,7 +353,7 @@ pluginTester({
           return 'pepito';
         };
         enqueueItem(
-          " function loopForeverSync(amount) { for (let i = 0; i < amount; i++) {}\\n  return 'pepito'; } return loopForeverSync(100000000);"
+          "function loopForeverSync(amount) { for (let i = 0; i < amount; i++) {} return 'pepito'; } return loopForeverSync(100000000);"
         );
       `,
     },
@@ -372,7 +372,7 @@ pluginTester({
           return label;
         };
         enqueueItem(
-          ' function processData(count, label) { for (let i = 0; i < count; i++) {}\\n  return label; } return processData(1000, "processing");'
+          'function processData(count, label) { for (let i = 0; i < count; i++) {} return label; } return processData(1000, "processing");'
         );
       `,
     },
@@ -428,10 +428,88 @@ pluginTester({
           return value;
         };
         const newValue = 123 + 123;
+        enqueueItem(\`function loop(value) { return value; } return loop(\${newValue});\`);
+      `,
+    },
+    {
+      title: 'Handles runtime values by referencing them in template literals',
+      code: `
+        const loop = (value) => {
+          return value;
+        };
+        const a = anotherValue();
+        enqueueItem(loop(a));
+      `,
+      output: `
+        const loop = (value) => {
+          return value;
+        };
+        const a = anotherValue();
+        enqueueItem(\`function loop(value) { return value; } return loop(\${a});\`);
+      `,
+    },
+    {
+      title: 'Transforms async function with runtime values',
+      code: `
+        const delay = 1000;
+        const asyncLoop = async (waitTime) => {
+          await new Promise(resolve => setTimeout(resolve, waitTime));
+          return 'done waiting';
+        };
+        enqueueItem(asyncLoop(delay));
+      `,
+      output: `
+        const delay = 1000;
+        const asyncLoop = async (waitTime) => {
+          await new Promise((resolve) => setTimeout(resolve, waitTime));
+          return 'done waiting';
+        };
         enqueueItem(
-          'const newValue = 123 + 123; function loop(value) { return value; } return loop(newValue);'
+          \`async function asyncLoop(waitTime) { await new Promise(resolve => setTimeout(resolve, waitTime)); return 'done waiting'; } return asyncLoop(\${delay});\`
         );
       `,
     },
+    {
+      title: 'Transforms async function with expression argument',
+      code: `
+        const baseDelay = 500;
+        const asyncLoop = async (waitTime) => {
+          await new Promise(resolve => setTimeout(resolve, waitTime));
+          return 'done waiting';
+        };
+        enqueueItem(asyncLoop(baseDelay * 2));
+      `,
+      output: `
+        const baseDelay = 500;
+        const asyncLoop = async (waitTime) => {
+          await new Promise((resolve) => setTimeout(resolve, waitTime));
+          return 'done waiting';
+        };
+        enqueueItem(
+          \`async function asyncLoop(waitTime) { await new Promise(resolve => setTimeout(resolve, waitTime)); return 'done waiting'; } return asyncLoop(\${baseDelay} * 2);\`
+        );
+      `,
+    },
+    // {
+    //   title: 'Transforms async function with multiple runtime values',
+    //   code: `
+    //     const delay = 1000;
+    //     const message = "completed";
+    //     const asyncLoop = async (waitTime, result) => {
+    //       await new Promise(resolve => setTimeout(resolve, waitTime));
+    //       return result;
+    //     };
+    //     enqueueItem(asyncLoop(delay, message));
+    //   `,
+    //   output: `
+    //     const delay = 1000;
+    //     const message = "completed";
+    //     const asyncLoop = async (waitTime, result) => {
+    //       await new Promise(resolve => setTimeout(resolve, waitTime));
+    //       return result;
+    //     };
+    //     enqueueItem(\`async function asyncLoop(waitTime, result) { await new Promise(resolve => setTimeout(resolve, waitTime)); return result; } return asyncLoop(\${delay}, \${message});\`);
+    //   `,
+    // },
   ],
 });

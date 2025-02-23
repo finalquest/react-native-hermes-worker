@@ -19,31 +19,12 @@ module.exports = function (babel) {
       })
       // Remove extra curly braces if they exist
       .replace(/^{|}$/g, '')
+      // Remove all newlines and extra spaces
+      .replace(/\s+/g, ' ')
       .trim();
 
     const asyncPrefix = isAsync ? 'async ' : '';
     return `${asyncPrefix}function ${functionName}(${params}) { ${es5Body} } ${functionName}();`;
-  }
-
-  function generateFunctionWithArgs(
-    functionName,
-    functionBody,
-    params = '',
-    args = [],
-    isAsync = false
-  ) {
-    let es5Body = functionBody
-      .replace(/\(\s*\)\s*=>\s*/, '')
-      .replace(/\b(let|const)\b/g, 'var')
-      .replace(/`([^`]*)`/g, function (_, contents) {
-        return "'" + contents.replace(/'/g, "\\'") + "'";
-      })
-      .replace(/^{|}$/g, '')
-      .replace(/\s+/g, ' ') // Replace multiple spaces with single space
-      .trim();
-
-    const asyncPrefix = isAsync ? 'async ' : '';
-    return `(function() { ${asyncPrefix}function ${functionName}(${params}) { ${es5Body} } return ${functionName}(${args.join(', ')}); })()`;
   }
 
   function extractFunctionParts(path, node) {
@@ -55,7 +36,6 @@ module.exports = function (babel) {
       isAsync = node.async;
       params = node.params
         .map((param) => {
-          // Use the parameter name from the AST instead of raw source code
           return t.isIdentifier(param)
             ? param.name
             : path.hub.file.code.slice(param.start, param.end);
@@ -63,12 +43,12 @@ module.exports = function (babel) {
         .join(', ');
       functionBody = path.hub.file.code
         .slice(node.body.start + 1, node.body.end - 1)
+        .replace(/\s+/g, ' ')
         .trim();
     } else if (t.isArrowFunctionExpression(node)) {
       isAsync = node.async;
       params = node.params
         .map((param) => {
-          // Use the parameter name from the AST instead of raw source code
           return t.isIdentifier(param)
             ? param.name
             : path.hub.file.code.slice(param.start, param.end);
@@ -77,6 +57,7 @@ module.exports = function (babel) {
       if (t.isBlockStatement(node.body)) {
         functionBody = path.hub.file.code
           .slice(node.body.start + 1, node.body.end - 1)
+          .replace(/\s+/g, ' ')
           .trim();
       } else {
         functionBody = `return ${path.hub.file.code.slice(node.body.start, node.body.end)};`;
@@ -144,20 +125,49 @@ module.exports = function (babel) {
 
                   // Extract argument values and their declarations if they are variables
                   const args = arg.arguments.map((argNode) => {
-                    if (t.isIdentifier(argNode)) {
+                    if (t.isBinaryExpression(argNode)) {
+                      // For binary expressions, check if either operand is a runtime value
+                      const left =
+                        t.isIdentifier(argNode.left) &&
+                        path.scope.getBinding(argNode.left.name)
+                          ? { value: argNode.left.name, isRuntime: true }
+                          : {
+                              value: path.hub.file.code.slice(
+                                argNode.left.start,
+                                argNode.left.end
+                              ),
+                              isRuntime: false,
+                            };
+
+                      const right =
+                        t.isIdentifier(argNode.right) &&
+                        path.scope.getBinding(argNode.right.name)
+                          ? { value: argNode.right.name, isRuntime: true }
+                          : {
+                              value: path.hub.file.code.slice(
+                                argNode.right.start,
+                                argNode.right.end
+                              ),
+                              isRuntime: false,
+                            };
+
+                      const operator = argNode.operator;
+
+                      return {
+                        value: {
+                          left,
+                          operator,
+                          right,
+                        },
+                        isRuntime: left.isRuntime || right.isRuntime,
+                        isBinaryExpression: true,
+                      };
+                    } else if (t.isIdentifier(argNode)) {
                       const argBinding = path.scope.getBinding(argNode.name);
-                      if (
-                        argBinding &&
-                        t.isVariableDeclarator(argBinding.path.node)
-                      ) {
-                        const declaration = path.hub.file.code.slice(
-                          argBinding.path.node.init.start,
-                          argBinding.path.node.init.end
-                        );
+                      if (argBinding) {
                         return {
-                          name: argNode.name,
                           value: argNode.name,
-                          declaration: `const ${argNode.name} = ${declaration};`,
+                          isRuntime: true,
                         };
                       }
                     }
@@ -166,18 +176,120 @@ module.exports = function (babel) {
                         argNode.start,
                         argNode.end
                       ),
+                      isRuntime: false,
                     };
                   });
 
-                  // Build the function string including variable declarations
-                  const declarations = args
-                    .filter((arg) => arg.declaration)
-                    .map((arg) => arg.declaration)
-                    .join(' ');
+                  // Clean up function body - remove extra spaces and newlines
+                  const cleanBody = functionBody
+                    .replace(/\s+/g, ' ')
+                    .replace(/\n/g, '')
+                    .trim();
 
-                  const functionString = `${declarations} function ${callee.name}(${params}) { ${functionBody} } return ${callee.name}(${args.map((arg) => arg.value).join(', ')});`;
+                  // If we have runtime values, create a template literal
+                  if (args.some((calleeArg) => calleeArg.isRuntime)) {
+                    const asyncPrefix = isAsync ? 'async ' : '';
+                    const beforeExpr = `${asyncPrefix}function ${callee.name}(${params}) { ${cleanBody} } return ${callee.name}(`;
+                    const afterExpr = ');';
 
-                  path.node.arguments[0] = t.stringLiteral(functionString);
+                    // Create template elements for each argument
+                    const quasis = [];
+                    const expressions = [];
+
+                    // Add the function definition and opening parenthesis
+                    quasis.push(
+                      t.templateElement(
+                        { raw: beforeExpr, cooked: beforeExpr },
+                        false
+                      )
+                    );
+
+                    // Add each argument
+                    args.forEach((arg, index) => {
+                      if (arg.isBinaryExpression) {
+                        const { left, operator, right } = arg.value;
+                        if (left.isRuntime) {
+                          expressions.push(t.identifier(left.value));
+                          quasis.push(
+                            t.templateElement(
+                              {
+                                raw: ` ${operator} ${right.value}${index === args.length - 1 ? afterExpr : ', '}`,
+                                cooked: ` ${operator} ${right.value}${index === args.length - 1 ? afterExpr : ', '}`,
+                              },
+                              index === args.length - 1
+                            )
+                          );
+                        } else if (right.isRuntime) {
+                          const prev = quasis.pop();
+                          const newRaw =
+                            prev.value.raw + `${left.value} ${operator} `;
+                          const newCooked =
+                            prev.value.cooked + `${left.value} ${operator} `;
+                          quasis.push(
+                            t.templateElement(
+                              { raw: newRaw, cooked: newCooked },
+                              false
+                            )
+                          );
+                          expressions.push(t.identifier(right.value));
+                          quasis.push(
+                            t.templateElement(
+                              {
+                                raw:
+                                  index === args.length - 1 ? afterExpr : ', ',
+                                cooked:
+                                  index === args.length - 1 ? afterExpr : ', ',
+                              },
+                              index === args.length - 1
+                            )
+                          );
+                        }
+                      } else if (arg.isRuntime) {
+                        expressions.push(t.identifier(arg.value));
+                        quasis.push(
+                          t.templateElement(
+                            {
+                              raw: index === args.length - 1 ? afterExpr : ', ',
+                              cooked:
+                                index === args.length - 1 ? afterExpr : ', ',
+                            },
+                            index === args.length - 1
+                          )
+                        );
+                      } else {
+                        const prev = quasis.pop();
+                        const newRaw =
+                          prev.value.raw +
+                          arg.value +
+                          (index === args.length - 1 ? afterExpr : ', ');
+                        const newCooked =
+                          prev.value.cooked +
+                          arg.value +
+                          (index === args.length - 1 ? afterExpr : ', ');
+                        quasis.push(
+                          t.templateElement(
+                            { raw: newRaw, cooked: newCooked },
+                            index === args.length - 1
+                          )
+                        );
+                      }
+                    });
+
+                    path.node.arguments[0] = t.templateLiteral(
+                      quasis,
+                      expressions
+                    );
+                  } else {
+                    const asyncPrefix = isAsync ? 'async ' : '';
+                    const functionString = `${asyncPrefix}function ${callee.name}(${params}) { ${cleanBody} } return ${callee.name}(${args
+                      .map((calleeArg) =>
+                        calleeArg.isBinaryExpression
+                          ? `${calleeArg.value.left.value} ${calleeArg.value.operator} ${calleeArg.value.right.value}`
+                          : calleeArg.value
+                      )
+                      .join(', ')});`;
+                    path.node.arguments[0] = t.stringLiteral(functionString);
+                  }
                 }
               }
             }
