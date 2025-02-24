@@ -55,14 +55,14 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/finalquest/react-native-hermes-worker/react-native-hermes-worker.git"
+    "url": "https://github.com/finalquest/react-native-hermes-worker.git"
   },
   "author": "Fernando Basello <fnbasello@gmail.com> (https://github.com/finalquest/react-native-hermes-worker)",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/finalquest/react-native-hermes-worker/react-native-hermes-worker/issues"
+    "url": "https://github.com/finalquest/react-native-hermes-worker/issues"
   },
-  "homepage": "https://github.com/finalquest/react-native-hermes-worker/react-native-hermes-worker#readme",
+  "homepage": "https://github.com/finalquest/react-native-hermes-worker#readme",
   "publishConfig": {
     "registry": "https://registry.npmjs.org/"
   },
