@@ -26,7 +26,7 @@ function findHermesCompiler() {
   // Get Hermes path from react-native
   const hermesPath = path.join(
     __dirname,
-    '../node_modules/react-native/sdks/hermesc',
+    '../../react-native/sdks/hermesc',
     hermesPlatformFolder,
     platform === 'win32' ? 'hermesc.exe' : 'hermesc'
   );
