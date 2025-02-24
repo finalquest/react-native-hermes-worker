@@ -93,16 +93,16 @@ module.exports = function (babel) {
                   t.isImportDeclaration(binding.path.parent))
               ) {
                 // Check arguments for runtime values
-                const args = arg.arguments.map((argNode) => {
-                  if (t.isIdentifier(argNode)) {
-                    const argBinding = path.scope.getBinding(argNode.name);
+                const args = arg.arguments.map((arg) => {
+                  if (t.isIdentifier(arg)) {
+                    const argBinding = path.scope.getBinding(arg.name);
                     if (argBinding) {
                       return {
-                        value: argNode.name,
+                        value: arg.name,
                         isRuntime: true,
                       };
                     }
-                  } else if (t.isBinaryExpression(argNode)) {
+                  } else if (t.isBinaryExpression(arg)) {
                     // For binary expressions, we need to handle the entire expression as one unit
                     const hasRuntimeValue = (node) => {
                       if (t.isIdentifier(node)) {
@@ -117,17 +117,14 @@ module.exports = function (babel) {
                       return false;
                     };
 
-                    const isRuntime = hasRuntimeValue(argNode);
+                    const isRuntime = hasRuntimeValue(arg);
                     return {
-                      value: path.hub.file.code.slice(
-                        argNode.start,
-                        argNode.end
-                      ),
+                      value: path.hub.file.code.slice(arg.start, arg.end),
                       isRuntime,
                       isBinaryExpression: true,
                     };
-                  } else if (t.isObjectExpression(argNode)) {
-                    const properties = argNode.properties
+                  } else if (t.isObjectExpression(arg)) {
+                    const properties = arg.properties
                       .map((prop) => {
                         if (t.isObjectProperty(prop)) {
                           if (t.isIdentifier(prop.value)) {
@@ -165,12 +162,12 @@ module.exports = function (babel) {
                     }
                   }
                   return {
-                    value: path.hub.file.code.slice(argNode.start, argNode.end),
+                    value: path.hub.file.code.slice(arg.start, arg.end),
                     isRuntime: false,
                   };
                 });
 
-                if (args.some((runtimeArg) => runtimeArg.isRuntime)) {
+                if (args.some((arg) => arg.isRuntime)) {
                   // Create template elements for each argument
                   const quasis = [];
                   const expressions = [];
@@ -184,8 +181,8 @@ module.exports = function (babel) {
                   );
 
                   // Add each argument
-                  args.forEach((objectArg, index) => {
-                    if (objectArg.isObject) {
+                  args.forEach((arg, index) => {
+                    if (arg.isObject) {
                       const prev = quasis.pop();
                       let objStr = prev.value.raw + '{ ';
 
@@ -250,11 +247,9 @@ module.exports = function (babel) {
                   );
                 } else {
                   // If no runtime values, use string literal
-                  const argsString = args
-                    .map((stringArg) => stringArg.value)
-                    .join(', ');
+                  const arg = args.map((arg) => arg.value).join(', ');
                   path.node.arguments[0] = t.stringLiteral(
-                    `${callee.name}(${argsString})`
+                    `${callee.name}(${arg})`
                   );
                 }
                 return;
@@ -279,34 +274,34 @@ module.exports = function (babel) {
                     extractFunctionParts(path, functionNode);
 
                   // Extract argument values and their declarations if they are variables
-                  const args = arg.arguments.map((argNode) => {
-                    if (t.isBinaryExpression(argNode)) {
+                  const args = arg.arguments.map((arg) => {
+                    if (t.isBinaryExpression(arg)) {
                       // For binary expressions, check if either operand is a runtime value
                       const left =
-                        t.isIdentifier(argNode.left) &&
-                        path.scope.getBinding(argNode.left.name)
-                          ? { value: argNode.left.name, isRuntime: true }
+                        t.isIdentifier(arg.left) &&
+                        path.scope.getBinding(arg.left.name)
+                          ? { value: arg.left.name, isRuntime: true }
                           : {
                               value: path.hub.file.code.slice(
-                                argNode.left.start,
-                                argNode.left.end
+                                arg.left.start,
+                                arg.left.end
                               ),
                               isRuntime: false,
                             };
 
                       const right =
-                        t.isIdentifier(argNode.right) &&
-                        path.scope.getBinding(argNode.right.name)
-                          ? { value: argNode.right.name, isRuntime: true }
+                        t.isIdentifier(arg.right) &&
+                        path.scope.getBinding(arg.right.name)
+                          ? { value: arg.right.name, isRuntime: true }
                           : {
                               value: path.hub.file.code.slice(
-                                argNode.right.start,
-                                argNode.right.end
+                                arg.right.start,
+                                arg.right.end
                               ),
                               isRuntime: false,
                             };
 
-                      const operator = argNode.operator;
+                      const operator = arg.operator;
 
                       return {
                         value: {
@@ -317,20 +312,17 @@ module.exports = function (babel) {
                         isRuntime: left.isRuntime || right.isRuntime,
                         isBinaryExpression: true,
                       };
-                    } else if (t.isIdentifier(argNode)) {
-                      const argBinding = path.scope.getBinding(argNode.name);
+                    } else if (t.isIdentifier(arg)) {
+                      const argBinding = path.scope.getBinding(arg.name);
                       if (argBinding) {
                         return {
-                          value: argNode.name,
+                          value: arg.name,
                           isRuntime: true,
                         };
                       }
                     }
                     return {
-                      value: path.hub.file.code.slice(
-                        argNode.start,
-                        argNode.end
-                      ),
+                      value: path.hub.file.code.slice(arg.start, arg.end),
                       isRuntime: false,
                     };
                   });
@@ -342,7 +334,7 @@ module.exports = function (babel) {
                     .trim();
 
                   // If we have runtime values, create a template literal
-                  if (args.some((calleeArg) => calleeArg.isRuntime)) {
+                  if (args.some((arg) => arg.isRuntime)) {
                     const asyncPrefix = isAsync ? 'async ' : '';
                     const beforeExpr = `${asyncPrefix}function ${callee.name}(${params}) { ${cleanBody} } return ${callee.name}(`;
                     const afterExpr = ');';
@@ -360,8 +352,8 @@ module.exports = function (babel) {
                     );
 
                     // Add each argument
-                    args.forEach((expressionArg, index) => {
-                      if (expressionArg.isBinaryExpression) {
+                    args.forEach((arg, index) => {
+                      if (arg.isBinaryExpression) {
                         const { left, operator, right } = arg.value;
                         if (left.isRuntime) {
                           expressions.push(t.identifier(left.value));
@@ -437,10 +429,10 @@ module.exports = function (babel) {
                   } else {
                     const asyncPrefix = isAsync ? 'async ' : '';
                     const functionString = `${asyncPrefix}function ${callee.name}(${params}) { ${cleanBody} } return ${callee.name}(${args
-                      .map((calleeArg) =>
-                        calleeArg.isBinaryExpression
-                          ? `${calleeArg.value.left.value} ${calleeArg.value.operator} ${calleeArg.value.right.value}`
-                          : calleeArg.value
+                      .map((arg) =>
+                        arg.isBinaryExpression
+                          ? `${arg.value.left.value} ${arg.value.operator} ${arg.value.right.value}`
+                          : arg.value
                       )
                       .join(', ')});`;
                     path.node.arguments[0] = t.stringLiteral(functionString);
