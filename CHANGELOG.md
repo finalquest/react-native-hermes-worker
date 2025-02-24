@@ -1,5 +1,10 @@
 # Changelog
 
+## <small>0.2.1 (2025-02-24)</small>
+
+* fix: bad project urls ([59b90d2](https://github.com/finalquest/react-native-hermes-worker/commit/59b90d2))
+* fix: correct path to android bundle ([8a9c761](https://github.com/finalquest/react-native-hermes-worker/commit/8a9c761))
+
 ## 0.2.0 (2025-02-24)
 
 * feat: handling imports as hermes bytecode function context ([c9294bf](https://github.com/finalquest/react-native-hermes-worker/react-native-hermes-worker/commit/c9294bf))
