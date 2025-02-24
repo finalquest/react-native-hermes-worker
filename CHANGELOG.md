@@ -1,5 +1,14 @@
 # Changelog
 
+## <small>0.2.3 (2025-02-24)</small>
+
+* fix: babel plugin ([378e2b5](https://github.com/finalquest/react-native-hermes-worker/commit/378e2b5))
+* fix: babel plugin ([767e56a](https://github.com/finalquest/react-native-hermes-worker/commit/767e56a))
+* fix: babel plugin ([d1ed346](https://github.com/finalquest/react-native-hermes-worker/commit/d1ed346))
+* fix: babel plugin ([62dc77f](https://github.com/finalquest/react-native-hermes-worker/commit/62dc77f))
+* fix: babel plugin ([b2d83a3](https://github.com/finalquest/react-native-hermes-worker/commit/b2d83a3))
+* fix: fix build hbc script path for hermesc ([df1a70f](https://github.com/finalquest/react-native-hermes-worker/commit/df1a70f))
+
 ## <small>0.2.2 (2025-02-24)</small>
 
 * fix: the transpilation was not handling correctyle the string templates ([ea96d66](https://github.com/finalquest/react-native-hermes-worker/commit/ea96d66))
