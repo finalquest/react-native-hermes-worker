@@ -1,5 +1,9 @@
 # Changelog
 
+## <small>0.2.2 (2025-02-24)</small>
+
+* fix: the transpilation was not handling correctyle the string templates ([ea96d66](https://github.com/finalquest/react-native-hermes-worker/commit/ea96d66))
+
 ## <small>0.2.1 (2025-02-24)</small>
 
 * fix: bad project urls ([59b90d2](https://github.com/finalquest/react-native-hermes-worker/commit/59b90d2))
