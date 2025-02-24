@@ -68,7 +68,10 @@ function buildForPlatform(platform, entryPoint, bundleOutput, hermesOutput) {
   console.log(
     `\nBuilding worker for ${platform}... with entrypoint ${entryPoint}, bundleOut: ${bundleOutput} and hermesOut: ${hermesOutput}`
   );
+
+  // Ensure both output directories exist
   ensureDirectoryExists(bundleOutput);
+  ensureDirectoryExists(hermesOutput);
 
   // Bundle with Metro
   console.log(`Bundling worker with Metro for ${platform}...`);
@@ -90,6 +93,16 @@ function buildForPlatform(platform, entryPoint, bundleOutput, hermesOutput) {
         ${bundleOutput}`,
     { stdio: 'inherit' }
   );
+
+  // Delete the bundle file after successful compilation
+  console.log(`Cleaning up bundle file for ${platform}...`);
+  try {
+    fs.unlinkSync(bundleOutput);
+  } catch (error) {
+    console.warn(
+      `Warning: Could not delete bundle file ${bundleOutput}: ${error.message}`
+    );
+  }
 }
 
 for (const entryPoint of config) {
@@ -110,12 +123,12 @@ for (const entryPoint of config) {
   // Android paths for this worker
   const androidBundle = path.join(
     process.cwd(),
-    'android/src/main/assets',
+    'android/app/src/main/assets',
     `${workerName}.worker.bundle.js`
   );
   const androidHermes = path.join(
     process.cwd(),
-    'android/src/main/assets',
+    'android/app/src/main/assets',
     `${workerName}.worker.bundle.hbc`
   );
 
