@@ -411,7 +411,7 @@ pluginTester({
         import { processData } from 'worker-functions';
         const count = 1000;
         const label = 'processing';
-        enqueueItem('processData(count * 2, label + "_task")');
+        enqueueItem(\`processData(\${count * 2}, \${label + '_task'})\`);
       `,
     },
     {
@@ -490,26 +490,107 @@ pluginTester({
         );
       `,
     },
-    // {
-    //   title: 'Transforms async function with multiple runtime values',
-    //   code: `
-    //     const delay = 1000;
-    //     const message = "completed";
-    //     const asyncLoop = async (waitTime, result) => {
-    //       await new Promise(resolve => setTimeout(resolve, waitTime));
-    //       return result;
-    //     };
-    //     enqueueItem(asyncLoop(delay, message));
-    //   `,
-    //   output: `
-    //     const delay = 1000;
-    //     const message = "completed";
-    //     const asyncLoop = async (waitTime, result) => {
-    //       await new Promise(resolve => setTimeout(resolve, waitTime));
-    //       return result;
-    //     };
-    //     enqueueItem(\`async function asyncLoop(waitTime, result) { await new Promise(resolve => setTimeout(resolve, waitTime)); return result; } return asyncLoop(\${delay}, \${message});\`);
-    //   `,
-    // },
+    // New test cases for imported functions with runtime values
+    {
+      title: 'Handles imported function with runtime value argument',
+      code: `
+        import { processData } from 'worker-functions';
+        const data = getData();
+        enqueueItem(processData(data));
+      `,
+      output: `
+        import { processData } from 'worker-functions';
+        const data = getData();
+        enqueueItem(\`processData(\${data})\`);
+      `,
+    },
+    {
+      title: 'Handles imported function with multiple runtime value arguments',
+      code: `
+        import { transform } from 'worker-functions';
+        const code = getCode();
+        const options = getOptions();
+        enqueueItem(transform(code, options));
+      `,
+      output: `
+        import { transform } from 'worker-functions';
+        const code = getCode();
+        const options = getOptions();
+        enqueueItem(\`transform(\${code}, \${options})\`);
+      `,
+    },
+    {
+      title:
+        'Handles imported function with mixed runtime and literal arguments',
+      code: `
+        import { process } from 'worker-functions';
+        const data = getData();
+        enqueueItem(process(data, "strict", true));
+      `,
+      output: `
+        import { process } from 'worker-functions';
+        const data = getData();
+        enqueueItem(\`process(\${data}, "strict", true)\`);
+      `,
+    },
+    {
+      title:
+        'Handles imported function with binary expression containing runtime value',
+      code: `
+        import { calculate } from 'worker-functions';
+        const base = getValue();
+        enqueueItem(calculate(base * 2 + 1));
+      `,
+      output: `
+        import { calculate } from 'worker-functions';
+        const base = getValue();
+        enqueueItem(\`calculate(\${base * 2 + 1})\`);
+      `,
+    },
+    {
+      title:
+        'Handles imported function with complex binary expressions and multiple runtime values',
+      code: `
+        import { compute } from 'worker-functions';
+        const x = getX();
+        const y = getY();
+        enqueueItem(compute(x * 2, y + 1));
+      `,
+      output: `
+        import { compute } from 'worker-functions';
+        const x = getX();
+        const y = getY();
+        enqueueItem(\`compute(\${x * 2}, \${y + 1})\`);
+      `,
+    },
+    {
+      title: 'Handles imported function with string template literal argument',
+      code: `
+        import { format } from 'worker-functions';
+        const name = getName();
+        enqueueItem(format(\`Hello \${name}!\`));
+      `,
+      output: `
+        import { format } from 'worker-functions';
+        const name = getName();
+        enqueueItem('format(\`Hello \${name}!\`)');
+      `,
+    },
+    {
+      title:
+        'Handles imported function with object expression containing runtime values',
+      code: `
+        import { configure } from 'worker-functions';
+        const mode = getMode();
+        const level = getLevel();
+        enqueueItem(configure({ mode, level, debug: true }));
+      `,
+      output: `
+        import { configure } from 'worker-functions';
+        const mode = getMode();
+        const level = getLevel();
+        enqueueItem(\`configure({ mode: \${mode}, level: \${level}, debug: true })\`);
+      `,
+    },
   ],
 });

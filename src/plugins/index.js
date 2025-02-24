@@ -92,16 +92,171 @@ module.exports = function (babel) {
                 (binding.path.parent &&
                   t.isImportDeclaration(binding.path.parent))
               ) {
-                // Get the arguments as a string
-                const argsString = arg.arguments
-                  .map((argNode) =>
-                    path.hub.file.code.slice(argNode.start, argNode.end)
-                  )
-                  .join(', ');
+                // Check arguments for runtime values
+                const args = arg.arguments.map((argNode) => {
+                  if (t.isIdentifier(argNode)) {
+                    const argBinding = path.scope.getBinding(argNode.name);
+                    if (argBinding) {
+                      return {
+                        value: argNode.name,
+                        isRuntime: true,
+                      };
+                    }
+                  } else if (t.isBinaryExpression(argNode)) {
+                    // For binary expressions, we need to handle the entire expression as one unit
+                    const hasRuntimeValue = (node) => {
+                      if (t.isIdentifier(node)) {
+                        return path.scope.getBinding(node.name) != null;
+                      }
+                      if (t.isBinaryExpression(node)) {
+                        return (
+                          hasRuntimeValue(node.left) ||
+                          hasRuntimeValue(node.right)
+                        );
+                      }
+                      return false;
+                    };
 
-                path.node.arguments[0] = t.stringLiteral(
-                  `${callee.name}(${argsString})`
-                );
+                    const isRuntime = hasRuntimeValue(argNode);
+                    return {
+                      value: path.hub.file.code.slice(
+                        argNode.start,
+                        argNode.end
+                      ),
+                      isRuntime,
+                      isBinaryExpression: true,
+                    };
+                  } else if (t.isObjectExpression(argNode)) {
+                    const properties = argNode.properties
+                      .map((prop) => {
+                        if (t.isObjectProperty(prop)) {
+                          if (t.isIdentifier(prop.value)) {
+                            const objectBinding = path.scope.getBinding(
+                              prop.value.name
+                            );
+                            if (objectBinding) {
+                              return {
+                                key: prop.key.name,
+                                value: prop.value.name,
+                                isRuntime: true,
+                              };
+                            }
+                          }
+                          return {
+                            key: prop.key.name,
+                            value: path.hub.file.code.slice(
+                              prop.value.start,
+                              prop.value.end
+                            ),
+                            isRuntime: false,
+                          };
+                        }
+                        return null;
+                      })
+                      .filter(Boolean);
+
+                    const hasRuntimeProps = properties.some((p) => p.isRuntime);
+                    if (hasRuntimeProps) {
+                      return {
+                        properties,
+                        isObject: true,
+                        isRuntime: true,
+                      };
+                    }
+                  }
+                  return {
+                    value: path.hub.file.code.slice(argNode.start, argNode.end),
+                    isRuntime: false,
+                  };
+                });
+
+                if (args.some((runtimeArg) => runtimeArg.isRuntime)) {
+                  // Create template elements for each argument
+                  const quasis = [];
+                  const expressions = [];
+
+                  // Add the function name and opening parenthesis
+                  quasis.push(
+                    t.templateElement(
+                      { raw: `${callee.name}(`, cooked: `${callee.name}(` },
+                      false
+                    )
+                  );
+
+                  // Add each argument
+                  args.forEach((objectArg, index) => {
+                    if (objectArg.isObject) {
+                      const prev = quasis.pop();
+                      let objStr = prev.value.raw + '{ ';
+
+                      arg.properties.forEach((prop, propIndex) => {
+                        if (prop.isRuntime) {
+                          objStr += `${prop.key}: `;
+                          quasis.push(
+                            t.templateElement(
+                              { raw: objStr, cooked: objStr },
+                              false
+                            )
+                          );
+                          expressions.push(t.identifier(prop.value));
+                          objStr =
+                            propIndex < arg.properties.length - 1 ? ', ' : '';
+                        } else {
+                          objStr += `${prop.key}: ${prop.value}${propIndex < arg.properties.length - 1 ? ', ' : ''}`;
+                        }
+                      });
+
+                      objStr += ' }' + (index === args.length - 1 ? ')' : ', ');
+                      quasis.push(
+                        t.templateElement(
+                          { raw: objStr, cooked: objStr },
+                          index === args.length - 1
+                        )
+                      );
+                    } else if (arg.isRuntime) {
+                      if (arg.isBinaryExpression) {
+                        expressions.push(t.identifier(arg.value));
+                      } else {
+                        expressions.push(t.identifier(arg.value));
+                      }
+                      const separator = index === args.length - 1 ? ')' : ', ';
+                      quasis.push(
+                        t.templateElement(
+                          {
+                            raw: separator,
+                            cooked: separator,
+                          },
+                          index === args.length - 1
+                        )
+                      );
+                    } else {
+                      const prev = quasis.pop();
+                      const separator = index === args.length - 1 ? ')' : ', ';
+                      const newRaw = prev.value.raw + arg.value + separator;
+                      const newCooked =
+                        prev.value.cooked + arg.value + separator;
+                      quasis.push(
+                        t.templateElement(
+                          { raw: newRaw, cooked: newCooked },
+                          index === args.length - 1
+                        )
+                      );
+                    }
+                  });
+
+                  path.node.arguments[0] = t.templateLiteral(
+                    quasis,
+                    expressions
+                  );
+                } else {
+                  // If no runtime values, use string literal
+                  const argsString = args
+                    .map((stringArg) => stringArg.value)
+                    .join(', ');
+                  path.node.arguments[0] = t.stringLiteral(
+                    `${callee.name}(${argsString})`
+                  );
+                }
                 return;
               }
 
@@ -205,8 +360,8 @@ module.exports = function (babel) {
                     );
 
                     // Add each argument
-                    args.forEach((arg, index) => {
-                      if (arg.isBinaryExpression) {
+                    args.forEach((expressionArg, index) => {
+                      if (expressionArg.isBinaryExpression) {
                         const { left, operator, right } = arg.value;
                         if (left.isRuntime) {
                           expressions.push(t.identifier(left.value));
