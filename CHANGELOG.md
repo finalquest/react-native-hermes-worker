@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.2.0 (2025-02-24)
+
+* feat: handling imports as hermes bytecode function context ([c9294bf](https://github.com/finalquest/react-native-hermes-worker/react-native-hermes-worker/commit/c9294bf))
+* feat: handling the pass of args as a string literals ([6b7cd78](https://github.com/finalquest/react-native-hermes-worker/react-native-hermes-worker/commit/6b7cd78))
+
 ## 0.1.0 (2025-02-22)
 
 * fix: another atempt to fix changelog release ([ad3fd83](https://github.com/finalquest/react-native-hermes-worker/react-native-hermes-worker/commit/ad3fd83))
