@@ -78,11 +78,11 @@ module.exports = function (babel) {
             path.node.callee.property.name === 'enqueueItem');
 
         if (isEnqueueItemCall && path.node.arguments.length > 0) {
-          const arg = path.node.arguments[0];
+          const localArg = path.node.arguments[0];
 
           // New Case: Handle function calls with arguments
-          if (t.isCallExpression(arg)) {
-            const callee = arg.callee;
+          if (t.isCallExpression(localArg)) {
+            const callee = localArg.callee;
             if (t.isIdentifier(callee)) {
               const binding = path.scope.getBinding(callee.name);
 
@@ -93,7 +93,7 @@ module.exports = function (babel) {
                   t.isImportDeclaration(binding.path.parent))
               ) {
                 // Check arguments for runtime values
-                const args = arg.arguments.map((arg) => {
+                const args = localArg.arguments.map((arg) => {
                   if (t.isIdentifier(arg)) {
                     const argBinding = path.scope.getBinding(arg.name);
                     if (argBinding) {
@@ -247,9 +247,9 @@ module.exports = function (babel) {
                   );
                 } else {
                   // If no runtime values, use string literal
-                  const arg = args.map((arg) => arg.value).join(', ');
+                  const valueArg = args.map((arg) => arg.value).join(', ');
                   path.node.arguments[0] = t.stringLiteral(
-                    `${callee.name}(${arg})`
+                    `${callee.name}(${valueArg})`
                   );
                 }
                 return;
@@ -274,7 +274,7 @@ module.exports = function (babel) {
                     extractFunctionParts(path, functionNode);
 
                   // Extract argument values and their declarations if they are variables
-                  const args = arg.arguments.map((arg) => {
+                  const args = localArg.arguments.map((arg) => {
                     if (t.isBinaryExpression(arg)) {
                       // For binary expressions, check if either operand is a runtime value
                       const left =
@@ -440,8 +440,8 @@ module.exports = function (babel) {
                 }
               }
             }
-          } else if (t.isIdentifier(arg)) {
-            const binding = path.scope.getBinding(arg.name);
+          } else if (t.isIdentifier(localArg)) {
+            const binding = path.scope.getBinding(localArg.name);
 
             if (binding) {
               const bindingNode = binding.path.node;
@@ -453,7 +453,7 @@ module.exports = function (babel) {
                   bindingNode
                 );
                 const functionString = generateES5Function(
-                  arg.name,
+                  localArg.name,
                   functionBody,
                   isAsync,
                   params
@@ -472,7 +472,7 @@ module.exports = function (babel) {
                   bindingNode.init
                 );
                 const functionString = generateES5Function(
-                  arg.name,
+                  localArg.name,
                   functionBody,
                   isAsync,
                   params
@@ -484,12 +484,12 @@ module.exports = function (babel) {
 
           // Case 3: Directly Passed Arrow Functions or Function Expressions
           else if (
-            t.isArrowFunctionExpression(arg) ||
-            t.isFunctionExpression(arg)
+            t.isArrowFunctionExpression(localArg) ||
+            t.isFunctionExpression(localArg)
           ) {
             const { functionBody, params, isAsync } = extractFunctionParts(
               path,
-              arg
+              localArg
             );
             const functionString = generateES5Function(
               'anonymousFunction',
