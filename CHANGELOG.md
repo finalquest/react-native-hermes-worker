@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.3.0 (2025-02-25)
+
+* Handling strings (#2) ([56d33fa](https://github.com/finalquest/react-native-hermes-worker/commit/56d33fa)), closes [#2](https://github.com/finalquest/react-native-hermes-worker/issues/2) [#1](https://github.com/finalquest/react-native-hermes-worker/issues/1)
+
 ## <small>0.2.3 (2025-02-24)</small>
 
 * fix: babel plugin ([378e2b5](https://github.com/finalquest/react-native-hermes-worker/commit/378e2b5))

@@ -1,6 +1,6 @@
 {
   "name": "react-native-hermes-worker",
-  "version": "0.2.3",
+  "version": "0.3.0",
   "description": "A react-native js woker using hermes runtime",
   "source": "./src/index.tsx",
   "main": "./lib/commonjs/index.js",
