@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.4.0 (2025-03-06)
+
+* bug: assure string method is breaking the content if the content has a string template literal. ([a0cd358](https://github.com/finalquest/react-native-hermes-worker/commit/a0cd358)), closes [#3](https://github.com/finalquest/react-native-hermes-worker/issues/3)
+
 ## 0.3.0 (2025-02-25)
 
 * Handling strings (#2) ([56d33fa](https://github.com/finalquest/react-native-hermes-worker/commit/56d33fa)), closes [#2](https://github.com/finalquest/react-native-hermes-worker/issues/2) [#1](https://github.com/finalquest/react-native-hermes-worker/issues/1)
