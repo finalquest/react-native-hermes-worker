@@ -12,7 +12,7 @@ const stringValidator = (param: any): any => {
 
   // Handle strings - convert to template literals
   if (typeof param === 'string') {
-    return `\`${param}\``;
+    return `\"${param}\"`;
   }
 
   // Handle arrays - process each element
