@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.5.0 (2025-03-07)
+
+* fix: Passing js functions to enqueueItem do not work #4 ([ead9d43](https://github.com/finalquest/react-native-hermes-worker/commit/ead9d43)), closes [#4](https://github.com/finalquest/react-native-hermes-worker/issues/4) [#4](https://github.com/finalquest/react-native-hermes-worker/issues/4)
+* chore: fix validator test ([cad2b78](https://github.com/finalquest/react-native-hermes-worker/commit/cad2b78))
+
 ## <small>0.4.1 (2025-03-07)</small>
 
 * bug: assure string method is breaking the content if the content has a string template literal. ([0dd8fea](https://github.com/finalquest/react-native-hermes-worker/commit/0dd8fea)), closes [#3](https://github.com/finalquest/react-native-hermes-worker/issues/3)
