@@ -25,7 +25,7 @@ pluginTester({
           return 'done';
         };
         enqueueItem(
-          "function loopForever(count) { for (let i = 0; i < count; i++) {} return 'done'; } return loopForever(100000000);"
+          "(function() { function loopForever(count) { for (let i = 0; i < count; i++) {} return 'done'; } return loopForever(100000000); })();"
         );
       `,
     },
@@ -46,7 +46,7 @@ pluginTester({
           return 'done';
         };
         enqueueItem(
-          \`function loopForever(count) { for (let i = 0; i < count; i++) {} return 'done'; } return loopForever(\${amount});\`
+          \`(function() { function loopForever(count) { for (let i = 0; i < count; i++) {} return 'done'; } return loopForever(\${amount}); })();\`
         );
       `,
     },
@@ -67,7 +67,7 @@ pluginTester({
           return 'done';
         };
         enqueueItem(
-          \`function loopForever(count) { for (let i = 0; i < count; i++) {} return 'done'; } return loopForever(\${base} * 100);\`
+          \`(function() { function loopForever(count) { for (let i = 0; i < count; i++) {} return 'done'; } return loopForever(\${base} * 100); })();\`
         );
       `,
     },
@@ -86,7 +86,7 @@ pluginTester({
           return label;
         };
         enqueueItem(
-          'function processData(count, label) { for (let i = 0; i < count; i++) {} return label; } return processData(1000, "processing");'
+          '(function() { function processData(count, label) { for (let i = 0; i < count; i++) {} return label; } return processData(1000, "processing"); })();'
         );
       `,
     },
@@ -102,7 +102,9 @@ pluginTester({
         function funcToRun() {
           return 12234;
         }
-        enqueueItem('function funcToRun() { return 12234; } funcToRun();');
+        enqueueItem(
+          '(function() { function funcToRun() { return 12234; } return funcToRun(); })();'
+        );
       `,
     },
     {
@@ -124,7 +126,7 @@ pluginTester({
           };
         }
         enqueueItem(
-          "function funcToRun() { return { test: 'test', otroTest: 'otroTest', }; } funcToRun();"
+          "(function() { function funcToRun() { return { test: 'test', otroTest: 'otroTest', }; } return funcToRun(); })();"
         );
       `,
     },
@@ -140,7 +142,9 @@ pluginTester({
         const funcToRun = () => {
           return 12234;
         };
-        enqueueItem('function funcToRun() { return 12234; } funcToRun();');
+        enqueueItem(
+          '(function() { function funcToRun() { return 12234; } return funcToRun(); })();'
+        );
       `,
     },
     {
@@ -165,7 +169,9 @@ pluginTester({
         function funcToRun() {
           return 12234;
         }
-        worker.enqueueItem('function funcToRun() { return 12234; } funcToRun();');
+        worker.enqueueItem(
+          '(function() { function funcToRun() { return 12234; } return funcToRun(); })();'
+        );
       `,
     },
     {
@@ -181,7 +187,7 @@ pluginTester({
           return 12234;
         }
         some.deeply.nested.path.enqueueItem(
-          'function funcToRun() { return 12234; } funcToRun();'
+          '(function() { function funcToRun() { return 12234; } return funcToRun(); })();'
         );
       `,
     },
@@ -199,7 +205,7 @@ pluginTester({
           return 12234;
         }
         _reactNative.NativeModules.HermesWorker.enqueueItem(
-          'function funcToRun() { return 12234; } funcToRun();'
+          '(function() { function funcToRun() { return 12234; } return funcToRun(); })();'
         );
       `,
     },
@@ -216,7 +222,7 @@ pluginTester({
           return await Promise.resolve(123);
         }
         NativeModules.HermesWorker.enqueueItem(
-          'async function asyncFunc() { return await Promise.resolve(123); } asyncFunc();'
+          '(function() { async function asyncFunc() { return await Promise.resolve(123); } return asyncFunc(); })();'
         );
       `,
     },
@@ -233,7 +239,7 @@ pluginTester({
           return a + b;
         }
         NativeModules.HermesWorker.enqueueItem(
-          'function paramFunc(a, b) { return a + b; } paramFunc();'
+          '(function() { function paramFunc(a, b) { return a + b; } return paramFunc(); })();'
         );
       `,
     },
@@ -252,7 +258,7 @@ pluginTester({
           return 'pepito';
         };
         enqueueItem(
-          "function loopForeverSync() { for (var i = 0; i < 100000000; i++) {} return 'pepito'; } loopForeverSync();"
+          "(function() { function loopForeverSync() { for (var i = 0; i < 100000000; i++) {} return 'pepito'; } return loopForeverSync(); })();"
         );
       `,
     },
@@ -282,7 +288,7 @@ pluginTester({
           };
         };
         enqueueItem(
-          'function complexFunc() { var result = []; for (var i = 0; i < 10; i++) { result.push(i * 2); } return { data: result, sum: result.reduce(function(a, b) { return a + b; }, 0) }; } complexFunc();'
+          '(function() { function complexFunc() { var result = []; for (var i = 0; i < 10; i++) { result.push(i * 2); } return { data: result, sum: result.reduce(function(a, b) { return a + b; }, 0) }; } return complexFunc(); })();'
         );
       `,
     },
@@ -307,7 +313,7 @@ pluginTester({
           return \`Result: \${count}\`;
         };
         _reactNative.NativeModules.HermesWorker.enqueueItem(
-          "function loopForeverSync() { var count = 0; for (var i = 0; i < 100000000; i++) { count += i; } return 'Result: \${count}'; } loopForeverSync();"
+          "(function() { function loopForeverSync() { var count = 0; for (var i = 0; i < 100000000; i++) { count += i; } return 'Result: \${count}'; } return loopForeverSync(); })();"
         );
       `,
     },
@@ -334,7 +340,7 @@ pluginTester({
           return items;
         };
         enqueueItem(
-          "function complexFunc() { var items = []; var max = 10; for (var i = 0; i < max; i++) { items.push('Item \${i}'); } return items; } complexFunc();"
+          "(function() { function complexFunc() { var items = []; var max = 10; for (var i = 0; i < max; i++) { items.push('Item \${i}'); } return items; } return complexFunc(); })();"
         );
       `,
     },
@@ -353,7 +359,7 @@ pluginTester({
           return 'pepito';
         };
         enqueueItem(
-          "function loopForeverSync(amount) { for (let i = 0; i < amount; i++) {} return 'pepito'; } return loopForeverSync(100000000);"
+          "(function() { function loopForeverSync(amount) { for (let i = 0; i < amount; i++) {} return 'pepito'; } return loopForeverSync(100000000); })();"
         );
       `,
     },
@@ -372,7 +378,7 @@ pluginTester({
           return label;
         };
         enqueueItem(
-          'function processData(count, label) { for (let i = 0; i < count; i++) {} return label; } return processData(1000, "processing");'
+          '(function() { function processData(count, label) { for (let i = 0; i < count; i++) {} return label; } return processData(1000, "processing"); })();'
         );
       `,
     },
@@ -396,7 +402,7 @@ pluginTester({
       `,
       output: `
         import { externalFunc } from 'some-module';
-        enqueueItem('externalFunc(123, "test")');
+        enqueueItem('externalFunc(123, \"test\")');
       `,
     },
     {
@@ -428,7 +434,9 @@ pluginTester({
           return value;
         };
         const newValue = 123 + 123;
-        enqueueItem(\`function loop(value) { return value; } return loop(\${newValue});\`);
+        enqueueItem(
+          \`(function() { function loop(value) { return value; } return loop(\${newValue}); })();\`
+        );
       `,
     },
     {
@@ -445,7 +453,9 @@ pluginTester({
           return value;
         };
         const a = anotherValue();
-        enqueueItem(\`function loop(value) { return value; } return loop(\${a});\`);
+        enqueueItem(
+          \`(function() { function loop(value) { return value; } return loop(\${a}); })();\`
+        );
       `,
     },
     {
@@ -465,7 +475,7 @@ pluginTester({
           return 'done waiting';
         };
         enqueueItem(
-          \`async function asyncLoop(waitTime) { await new Promise(resolve => setTimeout(resolve, waitTime)); return 'done waiting'; } return asyncLoop(\${delay});\`
+          \`(function() { async function asyncLoop(waitTime) { await new Promise(resolve => setTimeout(resolve, waitTime)); return 'done waiting'; } return asyncLoop(\${delay}); })();\`
         );
       `,
     },
@@ -486,7 +496,7 @@ pluginTester({
           return 'done waiting';
         };
         enqueueItem(
-          \`async function asyncLoop(waitTime) { await new Promise(resolve => setTimeout(resolve, waitTime)); return 'done waiting'; } return asyncLoop(\${baseDelay} * 2);\`
+          \`(function() { async function asyncLoop(waitTime) { await new Promise(resolve => setTimeout(resolve, waitTime)); return 'done waiting'; } return asyncLoop(\${baseDelay} * 2); })();\`
         );
       `,
     },

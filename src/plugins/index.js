@@ -24,7 +24,7 @@ module.exports = function (babel) {
       .trim();
 
     const asyncPrefix = isAsync ? 'async ' : '';
-    return `${asyncPrefix}function ${functionName}(${params}) { ${es5Body} } ${functionName}();`;
+    return `(function() { ${asyncPrefix}function ${functionName}(${params}) { ${es5Body} } return ${functionName}(); })();`;
   }
 
   function extractFunctionParts(path, node) {
@@ -336,8 +336,8 @@ module.exports = function (babel) {
                   // If we have runtime values, create a template literal
                   if (args.some((arg) => arg.isRuntime)) {
                     const asyncPrefix = isAsync ? 'async ' : '';
-                    const beforeExpr = `${asyncPrefix}function ${callee.name}(${params}) { ${cleanBody} } return ${callee.name}(`;
-                    const afterExpr = ');';
+                    const beforeExpr = `(function() { ${asyncPrefix}function ${callee.name}(${params}) { ${cleanBody} } return ${callee.name}(`;
+                    const afterExpr = '); })();';
 
                     // Create template elements for each argument
                     const quasis = [];
@@ -428,13 +428,13 @@ module.exports = function (babel) {
                     );
                   } else {
                     const asyncPrefix = isAsync ? 'async ' : '';
-                    const functionString = `${asyncPrefix}function ${callee.name}(${params}) { ${cleanBody} } return ${callee.name}(${args
+                    const functionString = `(function() { ${asyncPrefix}function ${callee.name}(${params}) { ${cleanBody} } return ${callee.name}(${args
                       .map((arg) =>
                         arg.isBinaryExpression
                           ? `${arg.value.left.value} ${arg.value.operator} ${arg.value.right.value}`
                           : arg.value
                       )
-                      .join(', ')});`;
+                      .join(', ')}); })();`;
                     path.node.arguments[0] = t.stringLiteral(functionString);
                   }
                 }
