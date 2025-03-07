@@ -6,14 +6,14 @@ describe('validateStringParam', () => {
     expect(validateStringParam(undefined)).toBeUndefined();
   });
 
-  test('should convert strings to template literals', () => {
-    expect(validateStringParam('hello')).toBe('`hello`');
-    expect(validateStringParam('')).toBe('``');
+  test('should convert strings to escaped strings', () => {
+    expect(validateStringParam('hello')).toBe('\"hello\"');
+    expect(validateStringParam('')).toBe('\"\"');
   });
 
   test('should handle nested strings in arrays', () => {
     const input = ['a', 123, 'b'];
-    const expected = ['`a`', 123, '`b`'];
+    const expected = ['\"a\"', 123, '\"b\"'];
     expect(validateStringParam(input)).toEqual(expected);
   });
 
@@ -23,15 +23,15 @@ describe('validateStringParam', () => {
       ['c', 'd'],
     ];
     const expected = [
-      ['`a`', '`b`'],
-      ['`c`', '`d`'],
+      ['\"a\"', '\"b\"'],
+      ['\"c\"', '\"d\"'],
     ];
     expect(validateStringParam(input)).toEqual(expected);
   });
 
   test('should handle objects with string values', () => {
     const input = { name: 'John', age: 30 };
-    const expected = { name: '`John`', age: 30 };
+    const expected = { name: '\"John\"', age: 30 };
     expect(validateStringParam(input)).toEqual(expected);
   });
 
@@ -49,9 +49,9 @@ describe('validateStringParam', () => {
 
     const expected = {
       user: {
-        name: '`John`',
+        name: '\"John\"',
         contact: {
-          email: '`john@example.com`',
+          email: '\"john@example.com\"',
           phone: 123456,
         },
       },
@@ -68,7 +68,7 @@ describe('validateStringParam', () => {
     };
 
     const expected = {
-      names: ['`John`', '`Jane`'],
+      names: ['\"John\"', '\"Jane\"'],
       ages: [30, 25],
     };
 
@@ -82,8 +82,8 @@ describe('validateStringParam', () => {
     ];
 
     const expected = [
-      { name: '`John`', age: 30 },
-      { name: '`Jane`', age: 25 },
+      { name: '\"John\"', age: 30 },
+      { name: '\"Jane\"', age: 25 },
     ];
 
     expect(validateStringParam(input)).toEqual(expected);
@@ -96,9 +96,9 @@ describe('validateStringParam', () => {
     input.set(123, 'value');
 
     const expected = new Map();
-    expected.set('`name`', '`John`');
+    expected.set('`name`', '\"John\"');
     expected.set('`age`', 30);
-    expected.set(123, '`value`');
+    expected.set(123, '\"value\"');
 
     expect(validateStringParam(input)).toEqual(expected);
   });
@@ -116,10 +116,10 @@ describe('validateStringParam', () => {
   });
 
   test('should handle strings with quotes', () => {
-    expect(validateStringParam('hello "world"')).toBe('`hello "world"`');
-    expect(validateStringParam("don't do that")).toBe("`don't do that`");
+    expect(validateStringParam('hello "world"')).toBe('\"hello \\"world\\"\"');
+    expect(validateStringParam("don't do that")).toBe('"don\'t do that"');
     expect(validateStringParam('mix of "double" and \'single\' quotes')).toBe(
-      '`mix of "double" and \'single\' quotes`'
+      '\"mix of \\"double\\" and \'single\' quotes\"'
     );
   });
 
@@ -127,16 +127,16 @@ describe('validateStringParam', () => {
     // Since we're using backticks as delimiters, any backticks within the string would need special handling
     // In this case, we're assuming the function doesn't do any escaping
     expect(validateStringParam('code: `const x = 1;`')).toBe(
-      '`code: `const x = 1;``'
+      '\"code: `const x = 1;`\"'
     );
     // In a real implementation, you might want to escape backticks in the input string
   });
 
   test('should handle strings with special characters', () => {
-    expect(validateStringParam('line1\nline2')).toBe('`line1\nline2`');
-    expect(validateStringParam('tab\tcharacter')).toBe('`tab\tcharacter`');
+    expect(validateStringParam('line1\nline2')).toBe('\"line1\\nline2\"');
+    expect(validateStringParam('tab\tcharacter')).toBe('\"tab\\tcharacter\"');
     expect(validateStringParam('\u2022 bullet point')).toBe(
-      '`\u2022 bullet point`'
+      '\"• bullet point\"'
     );
   });
 
@@ -172,28 +172,28 @@ describe('validateStringParam', () => {
     const expected = {
       users: [
         {
-          name: '`John`',
+          name: '\"John\"',
           contact: {
-            email: '`john@example.com`',
+            email: '\"john@example.com\"',
             addresses: [
-              { street: '`Main St`', number: 123 },
-              { street: '`Second Ave`', number: 456 },
+              { street: '\"Main St\"', number: 123 },
+              { street: '\"Second Ave\"', number: 456 },
             ],
           },
         },
         {
-          name: '`Jane`',
+          name: '\"Jane\"',
           contact: {
-            email: '`jane@example.com`',
-            addresses: [{ street: '`Park Rd`', number: 789 }],
+            email: '\"jane@example.com\"',
+            addresses: [{ street: '\"Park Rd\"', number: 789 }],
           },
         },
       ],
-      company: '`Acme Inc`',
+      company: '\"Acme Inc\"',
       active: true,
       stats: {
         employees: 50,
-        founded: '`2010`',
+        founded: '\"2010\"',
       },
     };
 
