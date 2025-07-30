@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.8)
 project(HermesWorker)
 
 set (CMAKE_VERBOSE_MAKEFILE ON)
-set (CMAKE_CXX_STANDARD 14)
+set (CMAKE_CXX_STANDARD 17)
 
 if(${CMAKE_BUILD_TYPE} STREQUAL "Debug")
   string(APPEND CMAKE_CXX_FLAGS " -DDEBUG")
