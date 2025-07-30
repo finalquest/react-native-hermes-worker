@@ -1,5 +1,9 @@
 # Changelog
 
+## <small>0.5.1 (2025-07-30)</small>
+
+* fix: react native 079 support ([7774e6e](https://github.com/finalquest/react-native-hermes-worker/commit/7774e6e))
+
 ## 0.5.0 (2025-03-07)
 
 * fix: Passing js functions to enqueueItem do not work #4 ([ead9d43](https://github.com/finalquest/react-native-hermes-worker/commit/ead9d43)), closes [#4](https://github.com/finalquest/react-native-hermes-worker/issues/4) [#4](https://github.com/finalquest/react-native-hermes-worker/issues/4)
