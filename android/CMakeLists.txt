@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.8)
+cmake_minimum_required(VERSION 3.22.1)
 project(HermesWorker)
 
 set (CMAKE_VERBOSE_MAKEFILE ON)
@@ -45,6 +45,12 @@ target_include_directories(
 
 # build shared lib
 set_target_properties(${PACKAGE_NAME} PROPERTIES LINKER_LANGUAGE CXX)
+
+# Ensure the shared object is linked with the 16 KB page alignment
+# required for new Android devices while keeping 4 KB compatibility.
+target_link_options(${PACKAGE_NAME} PRIVATE
+        "-Wl,-z,common-page-size=4096"
+        "-Wl,-z,max-page-size=16384")
 
 target_link_libraries(
   ${PACKAGE_NAME}
