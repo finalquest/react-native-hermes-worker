@@ -1,5 +1,10 @@
 # Changelog
 
+## <small>0.6.1 (2025-09-23)</small>
+
+* fix: support for 16kb page size for new android devices ([4890691](https://github.com/finalquest/react-native-hermes-worker/commit/4890691)), closes [#5](https://github.com/finalquest/react-native-hermes-worker/issues/5)
+* Update issue templates ([c2c815c](https://github.com/finalquest/react-native-hermes-worker/commit/c2c815c))
+
 ## <small>0.5.1 (2025-07-30)</small>
 
 * fix: react native 079 support ([7774e6e](https://github.com/finalquest/react-native-hermes-worker/commit/7774e6e))
