@@ -78,12 +78,26 @@ endif()
 
 find_package(hermes-engine REQUIRED CONFIG)
 
-  string(APPEND CMAKE_CXX_FLAGS " -DJS_RUNTIME_HERMES=1")
+string(APPEND CMAKE_CXX_FLAGS " -DJS_RUNTIME_HERMES=1")
 
+if(TARGET hermes-engine::hermesvm)
+  target_link_libraries(
+    ${PACKAGE_NAME}
+    hermes-engine::hermesvm
+  )
+elseif(TARGET hermes-engine::libhermes)
   target_link_libraries(
     ${PACKAGE_NAME}
     hermes-engine::libhermes
   )
+elseif(TARGET hermes-engine::hermes)
+  target_link_libraries(
+    ${PACKAGE_NAME}
+    hermes-engine::hermes
+  )
+else()
+  message(FATAL_ERROR "react-native-hermes-worker: no Hermes engine target found")
+endif()
 
   if(${HERMES_ENABLE_DEBUGGER})
     if(ReactAndroid_VERSION_MINOR GREATER_EQUAL 76)
