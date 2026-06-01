@@ -1,5 +1,9 @@
 # Changelog
 
+## <small>0.7.2 (2026-06-01)</small>
+
+* fix: support hermes-compiler path for RN 0.84+ ([a19c38f](https://github.com/finalquest/react-native-hermes-worker/commit/a19c38f))
+
 ## 0.7.0 (2026-01-15)
 
 * fix: upport to react native 0.82+ ([99e848f](https://github.com/finalquest/react-native-hermes-worker/commit/99e848f)), closes [#6](https://github.com/finalquest/react-native-hermes-worker/issues/6)
