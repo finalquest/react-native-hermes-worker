@@ -5,38 +5,52 @@ const fs = require('fs');
 const child_process = require('child_process');
 
 function findHermesCompiler() {
-  // Get platform-specific folder for Hermes
   const platform = process.platform;
   let hermesPlatformFolder;
+  let hermesBinary;
   switch (platform) {
     case 'darwin':
       hermesPlatformFolder = 'osx-bin';
+      hermesBinary = 'hermesc';
       break;
     case 'linux':
       hermesPlatformFolder = 'linux64-bin';
+      hermesBinary = 'hermesc';
       break;
     case 'win32':
       hermesPlatformFolder = 'win64-bin';
+      hermesBinary = 'hermesc.exe';
       break;
     default:
       console.error(`Unsupported platform: ${platform}`);
       process.exit(1);
   }
 
-  // Get Hermes path from react-native
-  const hermesPath = path.join(
-    __dirname,
-    '../../react-native/sdks/hermesc',
-    hermesPlatformFolder,
-    platform === 'win32' ? 'hermesc.exe' : 'hermesc'
-  );
+  const searchPaths = [
+    path.join(
+      __dirname,
+      '../../hermes-compiler/hermesc',
+      hermesPlatformFolder,
+      hermesBinary
+    ),
+    path.join(
+      __dirname,
+      '../../react-native/sdks/hermesc',
+      hermesPlatformFolder,
+      hermesBinary
+    ),
+  ];
 
-  if (fs.existsSync(hermesPath)) {
-    return hermesPath;
+  for (const hermesPath of searchPaths) {
+    if (fs.existsSync(hermesPath)) {
+      return hermesPath;
+    }
   }
 
-  console.error('Error: Hermes compiler not found at:');
-  console.error(`- Path: ${hermesPath}`);
+  console.error('Error: Hermes compiler not found. Searched:');
+  for (const p of searchPaths) {
+    console.error(`- ${p}`);
+  }
   console.error(
     'Make sure you have react-native installed with Hermes enabled'
   );
